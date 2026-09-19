@@ -68,9 +68,14 @@ module datapath(
     wire [1:0] t_forward_2;
     reg [31:0] fwd_rs1;
     reg [31:0] fwd_rs2;
+    
 
-    assign instrmem_flush = branch_taken; 
-    assign instrmem_stall = load_use_hazard;
+    // If branch is taken, then we need to flush the ID/EX register and the IF/ID register.
+    // In case of load-use hazard, we need to stall the IF/ID register, and flush ID/EX register.
+    // Since, memory is synchronous read, the register is inside the memory module and hence we expose if_id flush and if_id_stall
+    // pc_write is !load_use_hazard because we are stalling the IF/ID stage and do not want the PC to increment.
+
+    assign if_id_flush = branch_taken; 
     assign pc_write = !load_use_hazard;
     assign if_id_stall = load_use_hazard; 
     assign id_ex_flush = load_use_hazard || branch_taken; 
@@ -117,14 +122,10 @@ module datapath(
 
     // IF/ID Pipeline Register
     always @(posedge clk) begin
-        if (rst) begin
+        if (rst || if_id_flush) begin
             if_pc <= 32'd0;
         end else if (!if_id_stall) begin
-            if (branch_taken) begin
-                if_pc <= 32'd0;
-            end else begin
-                if_pc <= pc;
-            end
+            if_pc <= pc;
         end
     end
 
@@ -202,9 +203,9 @@ module datapath(
     instrmem instrmem_inst (
         .address(pc), 
         .data(if_instr), 
-        .instrmem_flush(instrmem_flush), 
+        .instrmem_flush(if_id_flush), 
         .clk(clk), 
-        .instrmem_stall(instrmem_stall), 
+        .instrmem_stall(if_id_stall), 
         .rst(rst)
     );
 
