@@ -172,10 +172,14 @@ module datapath(
             mem_pc <= 32'd0;
 
         end else begin
-
             if(!if_id_stall) begin
-                if_instr <= instr;
-                if_pc <= pc;
+                if(branch_taken) begin
+                    if_instr <= 32'h00000013; 
+                    if_pc    <= 32'd0;
+                end else begin
+                    if_instr <= instr;
+                    if_pc    <= pc;
+                end
             end
             
         if (id_ex_flush || branch_taken) begin
