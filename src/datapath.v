@@ -22,8 +22,8 @@ module datapath(
     reg [31:0] ex_pc;
     reg [31:0] mem_pc;
     
-    wire [31:0] instr;
-    reg [31:0] if_instr;
+    wire [31:0] if_instr;
+   
     
     wire [31:0] rs1;
     wire [31:0] rs2;
@@ -62,8 +62,14 @@ module datapath(
     reg ex_mem_write;
     wire t_branch;
 
-    wire [31:0] datamem_read;
-    reg [31:0] mem_datamem_read;
+
+    wire instrmem_flush;
+    assign instrmem_flush = (branch_taken);
+
+    wire instrmem_stall = load_use_hazard;
+
+
+    wire [31:0] mem_datamem_read;
 
     reg [31:0] regfile_data_in;
 
@@ -81,7 +87,7 @@ module datapath(
 
     assign instruction = if_instr;
     
-    instrmem instrmem_inst(.address(pc), .data(instr));
+    instrmem instrmem_inst(.address(pc), .data(if_instr), .instrmem_flush(instrmem_flush), .clk(clk), .instrmem_stall(instrmem_stall), .rst(rst));
     pc pc_inst (.clk(clk), .pc_write(pc_write), .pc_next(pc_next), .pc(pc), .rst(rst));
 
     wire [31:0] branch_target_pc = id_jalr_ctrl ? (alu_result & 32'hFFFFFFFE) : id_pc + id_immediate;
@@ -90,7 +96,7 @@ module datapath(
 
     wire branch_taken = (id_pc_ctrl & (t_branch | id_jump_ctrl | id_jalr_ctrl));
 
-    // --- Forwarding Multiplexers ---
+    
     wire [1:0] t_forward_1;
     wire [1:0] t_forward_2;
     reg [31:0] fwd_rs1;
@@ -137,11 +143,11 @@ module datapath(
     // ex_ means it is the register at boundary of EX/MEM
     // mem_ means it is the register at boundary of MEM/WB
 
+
+
     always @(posedge clk) begin
         if (rst) begin
-            if_instr <= 32'h00000013; 
             if_pc <= 32'd0;
-            
             id_rs1 <= 32'd0;
             id_rs2 <= 32'd0;
             id_immediate <= 32'd0;
@@ -168,19 +174,18 @@ module datapath(
             mem_alu_result <= 32'd0;
             mem_rd <= 5'd0;
             mem_reg_ctrl <= 3'b0;
-            mem_datamem_read <= 32'd0;
             mem_pc <= 32'd0;
 
         end else begin
+
             if(!if_id_stall) begin
                 if(branch_taken) begin
-                    if_instr <= 32'h00000013; 
                     if_pc    <= 32'd0;
                 end else begin
-                    if_instr <= instr;
                     if_pc    <= pc;
                 end
             end
+
             
         if (id_ex_flush || branch_taken) begin
             
@@ -227,7 +232,6 @@ module datapath(
             mem_alu_result <= ex_alu_result;
             mem_rd <= ex_rd;
             mem_reg_ctrl <= ex_reg_ctrl;
-            mem_datamem_read <= datamem_read;
             mem_pc <= ex_pc;
         end
     end
@@ -250,10 +254,11 @@ module datapath(
     datamem dm (
         .address(ex_alu_result),
         .write_data(ex_rs2),
-        .data(datamem_read),
+        .data(mem_datamem_read),
         .clk(clk),
         .mem_write(ex_mem_write),
-        .funct3(ex_funct3)
+        .funct3(ex_funct3),
+        .rst(rst)
     );
 
     forwardunit fw (

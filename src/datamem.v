@@ -6,9 +6,12 @@ module datamem(
     output reg [31:0] data,
     input clk,
     input mem_write,
-    input [2:0] funct3
+    input [2:0] funct3,
+    input rst
     );
     
+    reg [31:0] temp_data;
+
     reg [31:0] regs [0:1023];
     
     reg [7:0] mem_byte; 
@@ -16,7 +19,13 @@ module datamem(
     wire [31:0] read_data;
     
     assign read_data = regs[address[31:2]];
-    
+
+    always @(posedge clk)
+        if(rst)
+            data <= 32'b0;
+        else
+            data <= temp_data;
+
     always @(*) begin
         case(address[1:0]) 
             2'b00: mem_byte = read_data[7:0];
@@ -31,12 +40,12 @@ module datamem(
         endcase
        
         case(funct3) 
-            3'b000: data = {{24{mem_byte[7]}}, mem_byte};     // LB
-            3'b001: data = {{16{halfword[15]}}, halfword};    // LH
-            3'b010: data = read_data;                         // LW
-            3'b100: data = {24'b0, mem_byte};                 // LBU
-            3'b101: data = {16'b0, halfword};                 // LHU
-            default: data = read_data;
+            3'b000: temp_data = {{24{mem_byte[7]}}, mem_byte};     // LB
+            3'b001: temp_data = {{16{halfword[15]}}, halfword};    // LH
+            3'b010: temp_data = read_data;                         // LW
+            3'b100: temp_data = {24'b0, mem_byte};                 // LBU
+            3'b101: temp_data = {16'b0, halfword};                 // LHU
+            default: temp_data = read_data;
         endcase
     end
     
