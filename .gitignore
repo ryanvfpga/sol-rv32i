@@ -18,3 +18,9 @@
 *.bit
 *.mcs
 *.bin
+
+
+build/
+*.vvp
+*.vcd
+nul

@@ -37,7 +37,7 @@ module utype_tb();
         dut.dp.rf.regs[4] = 32'd0;
 
         #15 rst = 0;
-        #180;
+        #350;
 
         if (dut.dp.rf.regs[1] !== 32'h12345000) begin
             $display("FAIL: x1 = %h (exp: 12345000)", dut.dp.rf.regs[1]);

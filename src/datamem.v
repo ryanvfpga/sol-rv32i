@@ -11,7 +11,7 @@ module datamem(
     
     reg [31:0] regs [0:1023];
     
-    reg [7:0] byte;
+    reg [7:0] mem_byte; 
     reg [15:0] halfword;
     wire [31:0] read_data;
     
@@ -19,10 +19,10 @@ module datamem(
     
     always @(*) begin
         case(address[1:0]) 
-            2'b00: byte = read_data[7:0];
-            2'b01: byte = read_data[15:8];
-            2'b10: byte = read_data[23:16];
-            2'b11: byte = read_data[31:24];
+            2'b00: mem_byte = read_data[7:0];
+            2'b01: mem_byte = read_data[15:8];
+            2'b10: mem_byte = read_data[23:16];
+            2'b11: mem_byte = read_data[31:24];
         endcase
        
         case(address[1])
@@ -31,11 +31,11 @@ module datamem(
         endcase
        
         case(funct3) 
-            3'b000: data = {{24{byte[7]}}, byte};     // LB
-            3'b001: data = {{16{halfword[15]}}, halfword}; // LH
-            3'b010: data = read_data;                 // LW
-            3'b100: data = {24'b0, byte};             // LBU
-            3'b101: data = {16'b0, halfword};         // LHU
+            3'b000: data = {{24{mem_byte[7]}}, mem_byte};     // LB
+            3'b001: data = {{16{halfword[15]}}, halfword};    // LH
+            3'b010: data = read_data;                         // LW
+            3'b100: data = {24'b0, mem_byte};                 // LBU
+            3'b101: data = {16'b0, halfword};                 // LHU
             default: data = read_data;
         endcase
     end

@@ -131,7 +131,7 @@ module control(
             7'b0010111: begin //AUIPAC
                 imm_ctrl = 3'b010;
                 reg_ctrl = 3'b001;
-                alu_ctrl = 7'b101;
+                alu_ctrl = 7'b1010000;
 
             end
             

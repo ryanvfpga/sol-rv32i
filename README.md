@@ -4,25 +4,29 @@ A 32-bit, 5-stage pipelined RISC-V processor based on the **RV32I ISA**. The mai
 
 ## Microarchitecture
 
-Implemented a classic 5-stage RISC-V (RV32I) pipeline: **IF → ID → EX → MEM → WB**. While pipelining increases throughput, it also introduces control and data hazards that must be resolved.
+Implemented a basic 5-stage pipeline: **IF → ID → EX → MEM → WB**. Although, pipelining increases the throughput of the processor, it also introduces certain data and control hazards.
 
-### Data Hazards
+#### Data Hazards
 
-* **RAW (Read-After-Write) Hazards** are dynamically resolved, by detecting register dependencies in **EX** stage, and data is forwarded from **EX/MEM** or **MEM/WB** registers, in cases where both are present, **EX/MEM** is forwarded due to it being the more recent instruction.
+* RAW (Read-After-Write) Hazards are dynamically resolved, by detecting register dependencies in **EX** stage, and data is forwarded from **EX/MEM** or **MEM/WB** registers, in cases where both are present, **EX/MEM** is forwarded due to it being the more recent instruction.
 
-* **Load-Use Hazards** are detected in the **ID** stage when an instruction depends on a preceding load. Inserts a 1-cycle pipeline stall before forwarding data from the **MEM/WB** register.
+* Load-Use Hazards are detected in the **ID** stage when an instruction depends on a preceding load. Inserts a 1-cycle pipeline stall before forwarding data from the **MEM/WB** register.
 
-* **WB/ID Register Conflicts** are resolved at the register file level using by writing on negative edge, and reading on positive edge to prevent conflicts.
+* WB/ID Register Conflicts are resolved at the register file level using by writing on negative edge, and reading on positive edge to prevent conflicts.
 
-### Control Hazards
+#### Control Hazards
 
-* Branches are resolved in **EX** stage, and we always predict that the **branch is not taken** and hence fetch the 2 subsequent instructions.
+* Branches are resolved in **EX** stage, and we always predict that the branch is not taken and hence fetch the 2 subsequent instructions.
 
-* In case of a misprediction, the **IF/ID** and **ID/EX** registers need to be flushed, and thus we will incur a **2-cycle penalty.**
+* In case of a misprediction, the **IF/ID** and **ID/EX** registers need to be flushed, and thus we will incur a 2-cycle penalty.
+
+
+
 
 ## Instruction Set Architecture
 
-Implemented 37 of the 40 base RV32I instructions across 6 instruction formats. System exceptions (`ECALL`, `EBREAK`) and memory synchronization (`FENCE`) are omitted.
+Implemented 37 of the 40 base RV32I instructions, System exceptions (`ECALL`, `EBREAK`) and memory synchronization (`FENCE`) are omitted due to not being part of the microarchitectural scope.
+
 
 | Format | Instruction Type | Implemented Instructions |
 | :--- | :--- | :--- |
@@ -32,3 +36,17 @@ Implemented 37 of the 40 base RV32I instructions across 6 instruction formats. S
 | **B-Type** | Conditional Branches | `BEQ`, `BNE`, `BLT`, `BGE`, `BLTU`, `BGEU` |
 | **U-Type** | Upper Immediate Operations | `LUI`, `AUIPC` |
 | **J-Type** | Unconditional Jumps | `JAL` |
+
+## Testing
+
+Clone the repository, using
+
+```bash
+https://github.com/ryanvfpga/sol-rv32i.git
+cd sol-rv32i
+```
+
+Run all testbenches across subdirectories using the python testing framework that uses iverilog under the hood.
+
+```bash
+python run_tests.py
