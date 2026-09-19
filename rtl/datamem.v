@@ -11,7 +11,6 @@ module datamem(
     );
     
     reg [31:0] temp_data;
-
     reg [31:0] regs [0:1023];
     
     reg [7:0] mem_byte; 
@@ -49,6 +48,8 @@ module datamem(
         endcase
     end
     
+
+
     always @(posedge clk) begin
         if (mem_write) begin
             case(funct3)
@@ -72,5 +73,6 @@ module datamem(
             endcase
         end
     end
+
     
 endmodule

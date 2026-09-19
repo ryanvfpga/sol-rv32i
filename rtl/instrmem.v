@@ -9,7 +9,6 @@ module instrmem(
     input clk,
     input rst
 );
-    
     reg [31:0] mem_loc [0:1023];
 
     always @(posedge clk)
