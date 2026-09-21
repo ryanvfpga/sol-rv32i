@@ -4,9 +4,11 @@ A 32-bit, 5-stage pipelined RISC-V processor based on the **RV32I ISA**. The mai
 
 ## Microarchitecture
 
-It is a basic 5-stage pipelined design with IF, ID, EX, MEM, WB stages, and it also **Harvard Architecture** with **4KB of Instruction Memory and 4KB of Data Memory.**
+sol-rv32i utilizes a classic 5-stage pipeline **(IF, ID, EX, MEM, WB)** with a **Harvard Architecture**, featuring **4KB of Instruction Memory and 4KB of Data Memory** located in BRAM with single-cycle read/write capabilities.
+**(Note: Because read latency is 1 cycle, this project does not implement an L1 Instruction/Data cache).**
 
- Although, pipelining increases the throughput of the processor, it also introduces certain data and control hazards.
+
+Although, pipelining increases the throughput of the processor, it also introduces certain data and control hazards.
 
 #### Data Hazards
 
