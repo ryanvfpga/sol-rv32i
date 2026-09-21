@@ -4,7 +4,7 @@ import glob
 import subprocess
 
 BUILD_DIR = "build"
-SRC_DIR = "src"
+SRC_DIR = "rtl"
 TB_DIR = "tb"
 
 os.makedirs(BUILD_DIR, exist_ok=True)

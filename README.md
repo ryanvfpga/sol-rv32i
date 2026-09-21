@@ -4,7 +4,9 @@ A 32-bit, 5-stage pipelined RISC-V processor based on the **RV32I ISA**. The mai
 
 ## Microarchitecture
 
-Implemented a basic 5-stage pipeline: **IF → ID → EX → MEM → WB**. Although, pipelining increases the throughput of the processor, it also introduces certain data and control hazards.
+It is a basic 5-stage pipelined design with IF, ID, EX, MEM, WB stages, and it also **Harvard Architecture** with **4KB of Instruction Memory and 4KB of Data Memory.**
+
+ Although, pipelining increases the throughput of the processor, it also introduces certain data and control hazards.
 
 #### Data Hazards
 

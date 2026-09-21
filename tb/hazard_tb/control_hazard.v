@@ -45,11 +45,12 @@ module control_hazard_break_tb();
         end
 
         if (err_count == 0) begin
-            $display("All tests passed.");
+            $display("PASS");
         end else begin
             $display("Testbench failed with %d error(s).", err_count);
         end
 
         $finish;
     end
+    
 endmodule
