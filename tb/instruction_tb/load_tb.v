@@ -46,30 +46,30 @@ module load_tb();
         #180;
 
         if (dut.dp.rf.regs[5] !== 32'h8ABC807F) begin 
-            $display("LW failed: expected 8ABC807F, got %h", dut.dp.rf.regs[5]); 
+            $display("FAIL: LW expected 8ABC807F, got %h", dut.dp.rf.regs[5]); 
             err_count = err_count + 1; 
         end
         if (dut.dp.rf.regs[6] !== 32'hFFFFFF80) begin 
-            $display("LB failed: expected FFFFFF80, got %h", dut.dp.rf.regs[6]); 
+            $display("FAIL: LB expected FFFFFF80, got %h", dut.dp.rf.regs[6]); 
             err_count = err_count + 1; 
         end
         if (dut.dp.rf.regs[7] !== 32'h00000080) begin 
-            $display("LBU failed: expected 00000080, got %h", dut.dp.rf.regs[7]); 
+            $display("FAIL: LBU expected 00000080, got %h", dut.dp.rf.regs[7]); 
             err_count = err_count + 1; 
         end
         if (dut.dp.rf.regs[8] !== 32'hFFFF8ABC) begin 
-            $display("LH failed: expected FFFF8ABC, got %h", dut.dp.rf.regs[8]); 
+            $display("FAIL: LH expected FFFF8ABC, got %h", dut.dp.rf.regs[8]); 
             err_count = err_count + 1; 
         end
         if (dut.dp.rf.regs[9] !== 32'h00008ABC) begin 
-            $display("LHU failed: expected 00008ABC, got %h", dut.dp.rf.regs[9]); 
+            $display("FAIL: LHU expected 00008ABC, got %h", dut.dp.rf.regs[9]); 
             err_count = err_count + 1; 
         end
 
         if (err_count == 0) begin
-            $display("Test finished. All Load instructions passed.");
+            $display("PASS");
         end else begin
-            $display("Test finished with %d errors.", err_count);
+            $display("FAIL: %0d error(s).", err_count);
         end
 
         $finish;

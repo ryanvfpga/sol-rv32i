@@ -47,26 +47,26 @@ module loaduse_hazard_tb();
         #200;
 
         if (dut.dp.rf.regs[2] !== 32'd110) begin
-            $display("Test 1 failed (rs1): x2 expected 110, got %d", dut.dp.rf.regs[2]);
+            $display("FAIL: Test 1 failed (rs1): x2 expected 110, got %d", dut.dp.rf.regs[2]);
             err_count = err_count + 1;
         end
         if (dut.dp.rf.regs[6] !== 32'd110) begin
-            $display("Test 2 failed (rs2): x6 expected 110, got %d", dut.dp.rf.regs[6]);
+            $display("FAIL: Test 2 failed (rs2): x6 expected 110, got %d", dut.dp.rf.regs[6]);
             err_count = err_count + 1;
         end
         if (dut.dp.rf.regs[8] !== 32'd110) begin
-            $display("Test 3 failed (Load-Use): x8 expected 110, got %d", dut.dp.rf.regs[8]);
+            $display("FAIL: Test 3 failed (Load-Use): x8 expected 110, got %d", dut.dp.rf.regs[8]);
             err_count = err_count + 1;
         end
         if (dut.dp.rf.regs[9] !== 32'd120) begin
-            $display("Test 3 failed (RAW after Load-Use): x9 expected 120, got %d", dut.dp.rf.regs[9]);
+            $display("FAIL: Test 3 failed (RAW after Load-Use): x9 expected 120, got %d", dut.dp.rf.regs[9]);
             err_count = err_count + 1;
         end
 
         if (err_count == 0) begin
-            $display("All tests passed successfully.");
+            $display("PASS");
         end else begin
-            $display("Tests failed with %d errors.", err_count);
+            $display("FAIL: %0d error(s).", err_count);
         end
 
         $finish;

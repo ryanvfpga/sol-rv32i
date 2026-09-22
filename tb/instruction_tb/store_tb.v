@@ -46,14 +46,14 @@ module store_tb();
         // wait for 4 instrs + 5 nops to clear the MEM stage
         #150;
 
-        if (dut.dp.dm.regs[0] !== 32'hAABB3344) begin $display("SW/SH 1 failed: expected AABB3344, got %h", dut.dp.dm.regs[0]); err_count = err_count + 1; end
-        if (dut.dp.dm.regs[2] !== 32'h000000CC) begin $display("SB failed: expected 000000CC, got %h", dut.dp.dm.regs[2]); err_count = err_count + 1; end
-        if (dut.dp.dm.regs[3] !== 32'h0000DDEE) begin $display("SH 2 failed: expected 0000DDEE, got %h", dut.dp.dm.regs[3]); err_count = err_count + 1; end
+        if (dut.dp.dm.regs[0] !== 32'hAABB3344) begin $display("FAIL: SW/SH 1 expected AABB3344, got %h", dut.dp.dm.regs[0]); err_count = err_count + 1; end
+        if (dut.dp.dm.regs[2] !== 32'h000000CC) begin $display("FAIL: SB expected 000000CC, got %h", dut.dp.dm.regs[2]); err_count = err_count + 1; end
+        if (dut.dp.dm.regs[3] !== 32'h0000DDEE) begin $display("FAIL: SH 2 expected 0000DDEE, got %h", dut.dp.dm.regs[3]); err_count = err_count + 1; end
 
         if (err_count == 0) begin
-            $display("Test finished. All Store instructions passed.");
+            $display("PASS");
         end else begin
-            $display("Test finished with %d errors.", err_count);
+            $display("FAIL: %0d error(s).", err_count);
         end
 
         $finish;

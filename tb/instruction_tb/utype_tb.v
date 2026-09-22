@@ -60,7 +60,7 @@ module utype_tb();
         end
 
         if (err_count == 0)
-            $display("PASS: All U-type tests passed.");
+            $display("PASS");
         else
             $display("FAIL: %0d error(s).", err_count);
 

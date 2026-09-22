@@ -7,56 +7,55 @@ BUILD_DIR = "build"
 SRC_DIR = "rtl"
 TB_DIR = "tb"
 
+GREEN = "\033[92m"
+RED = "\033[91m"
+RESET = "\033[0m"
+
 os.makedirs(BUILD_DIR, exist_ok=True)
 
 src_files = glob.glob(f"{SRC_DIR}/*.v")
-
-# Deduplicate testbench files in case of overlapping glob matches
-tb_files = list(set(glob.glob(f"{TB_DIR}/*.v") + glob.glob(f"{TB_DIR}/**/*.v", recursive=True)))
+tb_files = sorted(list(set(glob.glob(f"{TB_DIR}/*.v") + glob.glob(f"{TB_DIR}/**/*.v", recursive=True))))
 
 if not tb_files:
     print("No testbench files found in tb/")
     sys.exit(1)
 
-print("==========================================")
-print(" Running all testbenches with iverilog... ")
-print("==========================================")
+print("Unit Tests")
+print("=" * 60)
 
 failed_tests = []
 
 for tb in tb_files:
     tb_name = os.path.splitext(os.path.basename(tb))[0]
     vvp_file = os.path.join(BUILD_DIR, f"{tb_name}.vvp")
-    
-    print("\n------------------------------------------")
-    print(f"Testing: {tb_name}")
-    print("------------------------------------------")
 
-    # 1. Compile
     compile_cmd = ["iverilog", "-g2012", "-I", SRC_DIR, "-o", vvp_file] + src_files + [tb]
     compile_res = subprocess.run(compile_cmd, capture_output=True, text=True)
-    
+
     if compile_res.returncode != 0:
-        print(compile_res.stderr)
-        print(f"Compilation failed for {tb_name}")
+        print(f"{tb_name}: {RED}FAIL{RESET} (Compilation Error)")
+        if compile_res.stderr.strip():
+            print(compile_res.stderr.strip())
         failed_tests.append(tb_name)
+        print("-" * 60)
         continue
 
-    # 2. Run simulation and capture output
+
     run_res = subprocess.run(["vvp", vvp_file], capture_output=True, text=True)
-    
-    # Print the simulation output to console
-    print(run_res.stdout, end="")
 
-    # Check for execution failure or 'FAIL' in the output string
-    if run_res.returncode != 0 or "FAIL" in run_res.stdout:
+    if run_res.returncode != 0 or "FAIL" in run_res.stdout or "PASS" not in run_res.stdout:
+        print(f"{tb_name}: {RED}FAIL{RESET}")
+      
+        if run_res.stdout.strip():
+            print(run_res.stdout.strip())
+        if run_res.stderr.strip():
+            print(run_res.stderr.strip())
+            
         failed_tests.append(tb_name)
+    else:
+        print(f"{tb_name}: {GREEN}PASS{RESET}")
 
-print("\n==========================================")
+    print("-" * 60)
+
 if failed_tests:
-    print(f"   TEST SUITE FAILED! Failed testbenches: {', '.join(failed_tests)}")
-    print("==========================================")
     sys.exit(1)
-else:
-    print("   All Testbenches Passed Successfully!   ")
-    print("==========================================")

@@ -42,20 +42,20 @@ module itype_tb();
        
         #150;
         
-        if (dut.dp.rf.regs[5] !== 32'd25) begin $display("ADDI failed: expected 25, got %d", dut.dp.rf.regs[5]); err_count = err_count + 1; end
-        if (dut.dp.rf.regs[6] !== 32'd1)  begin $display("SLTI failed: expected 1, got %d", dut.dp.rf.regs[6]); err_count = err_count + 1; end
-        if (dut.dp.rf.regs[7] !== 32'd0)  begin $display("SLTIU failed: expected 0, got %d", dut.dp.rf.regs[7]); err_count = err_count + 1; end
-        if (dut.dp.rf.regs[8] !== 32'd0)  begin $display("XORI failed: expected 0, got %d", dut.dp.rf.regs[8]); err_count = err_count + 1; end
-        if (dut.dp.rf.regs[9] !== 32'd31) begin $display("ORI failed: expected 31, got %d", dut.dp.rf.regs[9]); err_count = err_count + 1; end
-        if (dut.dp.rf.regs[10] !== 32'd9) begin $display("ANDI failed: expected 9, got %d", dut.dp.rf.regs[10]); err_count = err_count + 1; end
-        if (dut.dp.rf.regs[11] !== 32'd12) begin $display("SLLI failed: expected 12, got %d", dut.dp.rf.regs[11]); err_count = err_count + 1; end
-        if (dut.dp.rf.regs[12] !== 32'd6)  begin $display("SRLI failed: expected 6, got %d", dut.dp.rf.regs[12]); err_count = err_count + 1; end
-        if (dut.dp.rf.regs[13] !== -32'd2) begin $display("SRAI failed: expected -2, got %d", $signed(dut.dp.rf.regs[13])); err_count = err_count + 1; end
+        if (dut.dp.rf.regs[5] !== 32'd25) begin $display("FAIL: ADDI expected 25, got %d", dut.dp.rf.regs[5]); err_count = err_count + 1; end
+        if (dut.dp.rf.regs[6] !== 32'd1)  begin $display("FAIL: SLTI expected 1, got %d", dut.dp.rf.regs[6]); err_count = err_count + 1; end
+        if (dut.dp.rf.regs[7] !== 32'd0)  begin $display("FAIL: SLTIU expected 0, got %d", dut.dp.rf.regs[7]); err_count = err_count + 1; end
+        if (dut.dp.rf.regs[8] !== 32'd0)  begin $display("FAIL: XORI expected 0, got %d", dut.dp.rf.regs[8]); err_count = err_count + 1; end
+        if (dut.dp.rf.regs[9] !== 32'd31) begin $display("FAIL: ORI expected 31, got %d", dut.dp.rf.regs[9]); err_count = err_count + 1; end
+        if (dut.dp.rf.regs[10] !== 32'd9) begin $display("FAIL: ANDI expected 9, got %d", dut.dp.rf.regs[10]); err_count = err_count + 1; end
+        if (dut.dp.rf.regs[11] !== 32'd12) begin $display("FAIL: SLLI expected 12, got %d", dut.dp.rf.regs[11]); err_count = err_count + 1; end
+        if (dut.dp.rf.regs[12] !== 32'd6)  begin $display("FAIL: SRLI expected 6, got %d", dut.dp.rf.regs[12]); err_count = err_count + 1; end
+        if (dut.dp.rf.regs[13] !== -32'd2) begin $display("FAIL: SRAI expected -2, got %d", $signed(dut.dp.rf.regs[13])); err_count = err_count + 1; end
         
         if (err_count == 0) begin
-            $display("Test finished. All I-type instructions passed.");
+            $display("PASS");
         end else begin
-            $display("Test finished with %d errors.", err_count);
+            $display("FAIL: %0d error(s).", err_count);
         end
 
         $finish;

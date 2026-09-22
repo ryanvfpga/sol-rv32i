@@ -99,7 +99,7 @@ module branch_tb();
         if (dut.dp.rf.regs[21] !== 32'd1) begin $display("FAIL: BGEU not taken (x21 = %0d)", dut.dp.rf.regs[21]); err_count = err_count + 1; end
 
         if (err_count == 0)
-            $display("PASS: All 12 branch conditions (taken and not taken) passed.");
+            $display("PASS");
         else
             $display("FAIL: %0d error(s).", err_count);
 

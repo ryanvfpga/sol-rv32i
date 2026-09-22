@@ -1,6 +1,6 @@
 `timescale 1ns / 1ps
 
-module bubble_sot();
+module bubble_sort();
     reg clk;
     reg rst;
     integer err_count;
@@ -57,38 +57,18 @@ module bubble_sot();
    
         #8000; 
 
-  
-        $display("--------------------------------");
-        $display("Sorted Data Memory Output:");
-        
-        $display("mem[0] = %0d", dut.dp.dm.regs[0]);
-        if (dut.dp.dm.regs[0] > dut.dp.dm.regs[1]) begin $display("ERROR: Element out of order at index 0!"); err_count = err_count + 1; end
-
-        $display("mem[1] = %0d", dut.dp.dm.regs[1]);
-        if (dut.dp.dm.regs[1] > dut.dp.dm.regs[2]) begin $display("ERROR: Element out of order at index 1!"); err_count = err_count + 1; end
-
-        $display("mem[2] = %0d", dut.dp.dm.regs[2]);
-        if (dut.dp.dm.regs[2] > dut.dp.dm.regs[3]) begin $display("ERROR: Element out of order at index 2!"); err_count = err_count + 1; end
-
-        $display("mem[3] = %0d", dut.dp.dm.regs[3]);
-        if (dut.dp.dm.regs[3] > dut.dp.dm.regs[4]) begin $display("ERROR: Element out of order at index 3!"); err_count = err_count + 1; end
-
-        $display("mem[4] = %0d", dut.dp.dm.regs[4]);
-        if (dut.dp.dm.regs[4] > dut.dp.dm.regs[5]) begin $display("ERROR: Element out of order at index 4!"); err_count = err_count + 1; end
-
-        $display("mem[5] = %0d", dut.dp.dm.regs[5]);
-        if (dut.dp.dm.regs[5] > dut.dp.dm.regs[6]) begin $display("ERROR: Element out of order at index 5!"); err_count = err_count + 1; end
-
-        $display("mem[6] = %0d", dut.dp.dm.regs[6]);
-        if (dut.dp.dm.regs[6] > dut.dp.dm.regs[7]) begin $display("ERROR: Element out of order at index 6!"); err_count = err_count + 1; end
-
-        $display("mem[7] = %0d", dut.dp.dm.regs[7]);
-        $display("--------------------------------");
+        if (dut.dp.dm.regs[0] > dut.dp.dm.regs[1]) begin $display("FAIL: Element out of order at index 0!"); err_count = err_count + 1; end
+        if (dut.dp.dm.regs[1] > dut.dp.dm.regs[2]) begin $display("FAIL: Element out of order at index 1!"); err_count = err_count + 1; end
+        if (dut.dp.dm.regs[2] > dut.dp.dm.regs[3]) begin $display("FAIL: Element out of order at index 2!"); err_count = err_count + 1; end
+        if (dut.dp.dm.regs[3] > dut.dp.dm.regs[4]) begin $display("FAIL: Element out of order at index 3!"); err_count = err_count + 1; end
+        if (dut.dp.dm.regs[4] > dut.dp.dm.regs[5]) begin $display("FAIL: Element out of order at index 4!"); err_count = err_count + 1; end
+        if (dut.dp.dm.regs[5] > dut.dp.dm.regs[6]) begin $display("FAIL: Element out of order at index 5!"); err_count = err_count + 1; end
+        if (dut.dp.dm.regs[6] > dut.dp.dm.regs[7]) begin $display("FAIL: Element out of order at index 6!"); err_count = err_count + 1; end
 
         if (err_count == 0) begin
-            $display("Bubble Sort test passed successfully!");
+            $display("PASS");
         end else begin
-            $display("Tests failed with %0d errors.", err_count);
+            $display("FAIL: %0d error(s).", err_count);
         end
 
         $finish;

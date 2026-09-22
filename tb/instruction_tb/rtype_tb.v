@@ -67,21 +67,21 @@ module rtype_tb();
         #150;
 
         // check results
-        if (dut.dp.rf.regs[5] !== 32'd40) begin $display("ADD failed: expected 40, got %d", dut.dp.rf.regs[5]); err_count = err_count + 1; end
-        if (dut.dp.rf.regs[6] !== 32'd10) begin $display("SUB failed: expected 10, got %d", dut.dp.rf.regs[6]); err_count = err_count + 1; end
-        if (dut.dp.rf.regs[7] !== 32'd9)  begin $display("AND failed: expected 9, got %d", dut.dp.rf.regs[7]); err_count = err_count + 1; end
-        if (dut.dp.rf.regs[8] !== 32'd31) begin $display("OR failed: expected 31, got %d", dut.dp.rf.regs[8]); err_count = err_count + 1; end
-        if (dut.dp.rf.regs[9] !== 32'd22) begin $display("XOR failed: expected 22, got %d", dut.dp.rf.regs[9]); err_count = err_count + 1; end
-        if (dut.dp.rf.regs[10] !== 32'd60) begin $display("SLL failed: expected 60, got %d", dut.dp.rf.regs[10]); err_count = err_count + 1; end
-        if (dut.dp.rf.regs[11] !== 32'd6)  begin $display("SRL failed: expected 6, got %d", dut.dp.rf.regs[11]); err_count = err_count + 1; end
-        if (dut.dp.rf.regs[12] !== -32'd2) begin $display("SRA failed: expected -2, got %d", $signed(dut.dp.rf.regs[12])); err_count = err_count + 1; end
-        if (dut.dp.rf.regs[13] !== 32'd1)  begin $display("SLT failed: expected 1, got %d", dut.dp.rf.regs[13]); err_count = err_count + 1; end
-        if (dut.dp.rf.regs[14] !== 32'd0)  begin $display("SLTU failed: expected 0, got %d", dut.dp.rf.regs[14]); err_count = err_count + 1; end
+        if (dut.dp.rf.regs[5] !== 32'd40) begin $display("FAIL: ADD expected 40, got %d", dut.dp.rf.regs[5]); err_count = err_count + 1; end
+        if (dut.dp.rf.regs[6] !== 32'd10) begin $display("FAIL: SUB expected 10, got %d", dut.dp.rf.regs[6]); err_count = err_count + 1; end
+        if (dut.dp.rf.regs[7] !== 32'd9)  begin $display("FAIL: AND expected 9, got %d", dut.dp.rf.regs[7]); err_count = err_count + 1; end
+        if (dut.dp.rf.regs[8] !== 32'd31) begin $display("FAIL: OR expected 31, got %d", dut.dp.rf.regs[8]); err_count = err_count + 1; end
+        if (dut.dp.rf.regs[9] !== 32'd22) begin $display("FAIL: XOR expected 22, got %d", dut.dp.rf.regs[9]); err_count = err_count + 1; end
+        if (dut.dp.rf.regs[10] !== 32'd60) begin $display("FAIL: SLL expected 60, got %d", dut.dp.rf.regs[10]); err_count = err_count + 1; end
+        if (dut.dp.rf.regs[11] !== 32'd6)  begin $display("FAIL: SRL expected 6, got %d", dut.dp.rf.regs[11]); err_count = err_count + 1; end
+        if (dut.dp.rf.regs[12] !== -32'd2) begin $display("FAIL: SRA expected -2, got %d", $signed(dut.dp.rf.regs[12])); err_count = err_count + 1; end
+        if (dut.dp.rf.regs[13] !== 32'd1)  begin $display("FAIL: SLT expected 1, got %d", dut.dp.rf.regs[13]); err_count = err_count + 1; end
+        if (dut.dp.rf.regs[14] !== 32'd0)  begin $display("FAIL: SLTU expected 0, got %d", dut.dp.rf.regs[14]); err_count = err_count + 1; end
 
         if (err_count == 0) begin
-            $display("Test finished. All R-type instructions passed.");
+            $display("PASS");
         end else begin
-            $display("Test finished with %d errors.", err_count);
+            $display("FAIL: %0d error(s).", err_count);
         end
 
         $finish;

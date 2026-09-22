@@ -35,14 +35,14 @@ module fibonacci_tb();
         #600;
 
         if (dut.dp.rf.regs[1] !== 32'd8) begin
-            $display("Fibonacci test failed: F(6) expected 8, got %d", dut.dp.rf.regs[1]);
+            $display("FAIL: Fibonacci test failed: F(6) expected 8, got %d", dut.dp.rf.regs[1]);
             err_count = err_count + 1;
         end
 
         if (err_count == 0) begin
-            $display("Fibonacci test passed successfully. F(6) = 8");
+            $display("PASS");
         end else begin
-            $display("Tests failed with %d errors.", err_count);
+            $display("FAIL: %0d error(s).", err_count);
         end
 
         $finish;

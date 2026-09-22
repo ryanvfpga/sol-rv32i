@@ -1,4 +1,3 @@
-
 `timescale 1ns / 1ps
 
 module raw_hazard_tb();
@@ -69,34 +68,34 @@ module raw_hazard_tb();
         #240;
 
         if (dut.dp.rf.regs[4] !== 32'd30) begin
-            $display("Test 1 failed: x4 expected 30, got %d", dut.dp.rf.regs[4]);
+            $display("FAIL: Test 1 failed: x4 expected 30, got %d", dut.dp.rf.regs[4]);
             err_count = err_count + 1;
         end
         if (dut.dp.rf.regs[5] !== 32'd35) begin
-            $display("Test 1 failed (EX->EX): x5 expected 35, got %d", dut.dp.rf.regs[5]);
+            $display("FAIL: Test 1 failed (EX->EX): x5 expected 35, got %d", dut.dp.rf.regs[5]);
             err_count = err_count + 1;
         end
         if (dut.dp.rf.regs[8] !== 32'd35) begin
-            $display("Test 2 failed (MEM->EX): x8 expected 35, got %d", dut.dp.rf.regs[8]);
+            $display("FAIL: Test 2 failed (MEM->EX): x8 expected 35, got %d", dut.dp.rf.regs[8]);
             err_count = err_count + 1;
         end
         if (dut.dp.rf.regs[10] !== 32'd40) begin
-            $display("Test 3 failed (Priority): x10 expected 40, got %d", dut.dp.rf.regs[10]);
+            $display("FAIL: Test 3 failed (Priority): x10 expected 40, got %d", dut.dp.rf.regs[10]);
             err_count = err_count + 1;
         end
         if (dut.dp.dm.regs[0] !== 32'd30) begin
-            $display("Test 4 failed (Store forward): mem[0] expected 30, got %d", dut.dp.dm.regs[0]);
+            $display("FAIL: Test 4 failed (Store forward): mem[0] expected 30, got %d", dut.dp.dm.regs[0]);
             err_count = err_count + 1;
         end
         if (dut.dp.rf.regs[15] !== 32'd35) begin
-            $display("Test 5 failed (Negedge RF WB->ID): x15 expected 35, got %d", dut.dp.rf.regs[15]);
+            $display("FAIL: Test 5 failed (Negedge RF WB->ID): x15 expected 35, got %d", dut.dp.rf.regs[15]);
             err_count = err_count + 1;
         end
 
         if (err_count == 0) begin
-            $display("All RAW hazard forwarding tests passed successfully!");
+            $display("PASS");
         end else begin
-            $display("Tests failed with %d errors.", err_count);
+            $display("FAIL: %0d error(s).", err_count);
         end
 
         $finish;
