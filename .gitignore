@@ -24,3 +24,5 @@ build/
 *.vvp
 *.vcd
 nul
+
+sw/prebuilt
