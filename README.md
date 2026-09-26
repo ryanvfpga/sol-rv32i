@@ -43,14 +43,4 @@ Implemented 37 of the 40 base RV32I instructions, System exceptions (`ECALL`, `E
 
 ## Testing
 
-Clone the repository, using
 
-```bash
-https://github.com/ryanvfpga/sol-rv32i.git
-cd sol-rv32i
-```
-
-Run all testbenches across subdirectories using the python testing framework that uses iverilog under the hood.
-
-```bash
-python run_tests.py
