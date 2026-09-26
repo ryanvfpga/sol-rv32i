@@ -41,6 +41,33 @@ Implemented 37 of the 40 base RV32I instructions, System exceptions (`ECALL`, `E
 | **U-Type** | Upper Immediate Operations | `LUI`, `AUIPC` |
 | **J-Type** | Unconditional Jumps | `JAL` |
 
+
 ## Testing
 
+To run the test suites, clone the repository first:
 
+```bash
+git clone https://github.com/ryanvfpga/sol-rv32i.git
+cd sol-rv32i
+```
+
+### Prerequisites
+
+* **Icarus Verilog (`iverilog`)**: Required for all Verilog simulations, as well as running the C test programs.
+
+* **RISC-V Toolchain (`riscv32-unknown-elf-gcc`)**: Required only if compiling and running C test programs in `sw/programs/`.
+
+### Flags
+
+```bash
+# To simulate verilog testbenches, as well as C Programs
+python run_tests.py
+
+# To only simulate verilog testbenches
+python run_tests.py -v
+
+# To only compile and simulate C Programs (NOTE: This still requires iverilog under the hood to simulate after compilation)
+python run_tests.py -c
+
+```
+To add your own verilog testbenches or C Programs you can add them under `tb/` or `sw/programs/` respectively, ensure that both of them follow the general format of pre-existing testbenches/programs because `run_tests.py` relies on a generalized **PASS/FAIL** output from the simulator.
