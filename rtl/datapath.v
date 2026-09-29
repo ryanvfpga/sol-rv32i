@@ -10,11 +10,22 @@ module datapath(
     input mem_write,
     input pc_ctrl,
     input jump_ctrl,
-    input jalr_ctrl
+    input jalr_ctrl,
+    input branch_ctrl
 ); 
 
+    wire predicted;
+    reg if_predicted;
+    reg id_predicted;
+    reg [31:0] if_predicted_pc;
+    reg [31:0] id_predicted_pc;
+
+    reg [63:0] minstret;
+    reg [63:0] mcycle;
+
     wire [31:0] pc;
-    wire [31:0] pc_next;
+    reg [31:0] pc_next;
+    wire [31:0] predicted_pc; 
     wire [31:0] branch_target_pc;
     wire branch_taken;
     wire pc_write;
@@ -25,6 +36,7 @@ module datapath(
     reg [31:0] if_pc;
     wire [31:0] if_instr;
     wire if_id_stall;
+    wire if_id_flush; 
 
     reg [31:0] id_pc;
     reg [31:0] id_rs1;
@@ -38,6 +50,7 @@ module datapath(
     reg [2:0] id_funct3;
     reg id_pc_ctrl;
     reg id_jump_ctrl;
+    reg id_branch_ctrl;
     reg id_jalr_ctrl;
     reg id_mem_write;
     wire id_ex_flush;
@@ -69,22 +82,40 @@ module datapath(
     reg [31:0] fwd_rs1;
     reg [31:0] fwd_rs2;
     
-
-    // If branch is taken, then we need to flush the ID/EX register and the IF/ID register.
-    // In case of load-use hazard, we need to stall the IF/ID register, and flush ID/EX register.
-    // Since, memory is synchronous read, the register is inside the memory module and hence we expose if_id flush and if_id_stall
-    // pc_write is !load_use_hazard because we are stalling the IF/ID stage and do not want the PC to increment.
-
-    assign if_id_flush = branch_taken; 
-    assign pc_write = !load_use_hazard;
-    assign if_id_stall = load_use_hazard; 
-    assign id_ex_flush = load_use_hazard || branch_taken; 
+    reg misprediction;
 
     assign load_use_hazard = (id_reg_ctrl[2:1] == 2'b01) && (id_rd != 5'd0) && ((if_instr[19:15] == id_rd) || (if_instr[24:20] == id_rd));
+    assign if_id_stall = load_use_hazard && !misprediction;
+    assign pc_write = !if_id_stall;
+    assign if_id_flush = misprediction;
+    assign id_ex_flush = load_use_hazard || misprediction;
+
     assign instruction = if_instr;
     assign branch_target_pc = id_jalr_ctrl ? (alu_result & 32'hFFFFFFFE) : id_pc + id_immediate;
-    assign pc_next = branch_taken ? branch_target_pc : pc + 32'd4;   
     assign branch_taken = (id_pc_ctrl & (t_branch | id_jump_ctrl | id_jalr_ctrl));
+
+    always @(*) begin
+        misprediction = 0;
+        pc_next = predicted ? predicted_pc : (pc + 32'd4);
+        
+        if (id_branch_ctrl || id_jump_ctrl || id_jalr_ctrl) begin
+            if (branch_taken) begin
+                if (!id_predicted || (id_predicted_pc != branch_target_pc)) begin
+                    misprediction = 1;
+                    pc_next = branch_target_pc;
+                end
+            end else begin
+                if (id_predicted) begin
+                    misprediction = 1;
+                    pc_next = id_pc + 32'd4;
+                end
+            end
+        end else if (id_predicted) begin
+            // BTB alias: predicted taken, but this is not a control-flow instruction
+            misprediction = 1;
+            pc_next = id_pc + 32'd4;
+        end
+    end
 
     always @(*) begin
         case(t_forward_1)
@@ -120,16 +151,25 @@ module datapath(
         endcase
     end
 
-    // IF/ID Pipeline Register
     always @(posedge clk) begin
         if (rst || if_id_flush) begin
             if_pc <= 32'd0;
+            if_predicted <= 1'b0;
+            if_predicted_pc <= 32'd0;
         end else if (!if_id_stall) begin
             if_pc <= pc;
+            if_predicted <= predicted;
+            if_predicted_pc <= predicted_pc;
         end
     end
 
-    // ID/EX Pipeline Register
+    always @(posedge clk) begin
+        if(rst) 
+            mcycle <= 64'b0;
+        else
+            mcycle <= mcycle + 1'b1;
+    end
+
     always @(posedge clk) begin
         if (rst || id_ex_flush) begin
             id_rs1 <= 32'd0;
@@ -143,9 +183,12 @@ module datapath(
             id_pc_ctrl <= 1'b0;
             id_jump_ctrl <= 1'b0;
             id_jalr_ctrl <= 1'b0;
+            id_branch_ctrl <= 1'b0;
             id_funct3 <= 3'b0;
             id_rs1_addr <= 5'b0;
             id_rs2_addr <= 5'b0;
+            id_predicted <= 1'b0;
+            id_predicted_pc <= 32'd0;
         end else begin
             id_rs1 <= rs1;
             id_rs2 <= rs2;
@@ -158,13 +201,15 @@ module datapath(
             id_pc_ctrl <= pc_ctrl;
             id_jump_ctrl <= jump_ctrl;
             id_jalr_ctrl <= jalr_ctrl;
+            id_branch_ctrl <= branch_ctrl;
             id_funct3 <= if_instr[14:12];
             id_rs1_addr <= if_instr[19:15];
             id_rs2_addr <= if_instr[24:20];
+            id_predicted <= if_predicted;
+            id_predicted_pc <= if_predicted_pc;
         end
     end
 
-    // EX/MEM Pipeline Register
     always @(posedge clk) begin
         if (rst) begin
             ex_alu_result <= 32'd0;
@@ -185,7 +230,6 @@ module datapath(
         end
     end
 
-    // MEM/WB Pipeline Register
     always @(posedge clk) begin
         if (rst) begin
             mem_alu_result <= 32'd0;
@@ -263,4 +307,16 @@ module datapath(
         .forward_2(t_forward_2)
     );
 
-endmodule
+    bpredictor bp(
+        .ctrl({t_branch, id_branch_ctrl, id_jump_ctrl, id_jalr_ctrl}), 
+        .clk(clk), 
+        .rst(rst), 
+        .id_pc(id_pc), 
+        .pc(pc),
+        .jump_target(branch_target_pc), 
+        .predicted_pc(predicted_pc), 
+        .predicted(predicted)
+    );
+
+endmodule 
+
