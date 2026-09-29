@@ -4,11 +4,13 @@ A 32-bit, 5-stage pipelined RISC-V processor based on the **RV32I ISA**. The mai
 
 ## Microarchitecture
 
-sol-rv32i utilizes a classic 5-stage pipeline **(IF, ID, EX, MEM, WB)** with a **Harvard Architecture**, featuring **4KB of Instruction Memory and 4KB of Data Memory** located in BRAM with single-cycle read/write capabilities.
+**sol-rv32i** features a standard 5-stage pipeline **(IF, ID, EX, MEM, WB)** and utilizes a Harvard memory architecture with 16KB Instruction and Data memory based in BRAM allowing for 1 cycle read/write latency.
+
 **(Note: Because read latency is 1 cycle, this project does not implement an L1 Instruction/Data cache).**
 
+#### Branch Prediction & Control Hazards
+It also features a **2-bit dynamic branch predictor** to predict whether a branch will be taken or not, and a **BTB (Branch Table Buffer)** to store past branch targets to increase branch prediction accuracy from the standard Always Not Taken scheme and also reduce pipeline flushes thus boosting CPI. Branch prediction occurs in **IF** stage and resolved in **EX** stage, in case of misprediction both the IF and ID stages have to be flushed causing a 2-cycle penalty.
 
-Although, pipelining increases the throughput of the processor, it also introduces certain data and control hazards.
 
 #### Data Hazards
 
@@ -17,12 +19,6 @@ Although, pipelining increases the throughput of the processor, it also introduc
 * Load-Use Hazards are detected in the **ID** stage when an instruction depends on a preceding load. Inserts a 1-cycle pipeline stall before forwarding data from the **MEM/WB** register.
 
 * WB/ID Register Conflicts are resolved at the register file level using by writing on negative edge, and reading on positive edge to prevent conflicts.
-
-#### Control Hazards
-
-* Branches are resolved in **EX** stage, and we always predict that the branch is not taken and hence fetch the 2 subsequent instructions.
-
-* In case of a misprediction, the **IF/ID** and **ID/EX** registers need to be flushed, and thus we will incur a 2-cycle penalty.
 
 
 
