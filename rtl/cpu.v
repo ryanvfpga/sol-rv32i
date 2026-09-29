@@ -15,9 +15,10 @@ module cpu(
     wire pc_ctrl;
     wire  jump_ctrl;
     wire jalr_ctrl;
+    wire branch_ctrl;
      assign instr = instruction;
  
-    datapath dp (.clk(clk), .rst(rst), .instruction(instruction), .reg_ctrl(reg_ctrl), .alu_ctrl(alu_ctrl), .imm_ctrl(imm_ctrl), .mem_write(mem_write), .pc_ctrl(pc_ctrl), .jump_ctrl(jump_ctrl), .jalr_ctrl(jalr_ctrl));
-    control cu (.instr(instruction), .reg_ctrl(reg_ctrl), .alu_ctrl(alu_ctrl), .imm_ctrl(imm_ctrl), .mem_write(mem_write), .pc_ctrl(pc_ctrl), .jump_ctrl(jump_ctrl), .jalr_ctrl(jalr_ctrl));
+    datapath dp (.clk(clk), .rst(rst), .instruction(instruction), .reg_ctrl(reg_ctrl), .alu_ctrl(alu_ctrl), .imm_ctrl(imm_ctrl), .mem_write(mem_write), .pc_ctrl(pc_ctrl), .jump_ctrl(jump_ctrl), .jalr_ctrl(jalr_ctrl), .branch_ctrl(branch_ctrl));
+    control cu (.instr(instruction), .reg_ctrl(reg_ctrl), .alu_ctrl(alu_ctrl), .imm_ctrl(imm_ctrl), .mem_write(mem_write), .pc_ctrl(pc_ctrl), .jump_ctrl(jump_ctrl), .jalr_ctrl(jalr_ctrl), .branch_ctrl(branch_ctrl));
     
 endmodule

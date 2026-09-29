@@ -9,12 +9,17 @@ module instrmem(
     input clk,
     input rst
 );
-    reg [31:0] mem_loc [0:1023];
+    reg [31:0] mem_loc [0:4095];
 
-    always @(posedge clk)
+    always @(posedge clk) begin
         if (rst || instrmem_flush) begin
             data <= 32'h00000013; // NOP
         end else if (!instrmem_stall) begin
             data <= mem_loc[address[31:2]]; 
         end
+    end
+
+    
+
 endmodule
+

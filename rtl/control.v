@@ -28,7 +28,8 @@ module control(
     output reg mem_write,
     output reg pc_ctrl,
     output reg jump_ctrl,
-    output reg jalr_ctrl
+    output reg jalr_ctrl,
+    output reg branch_ctrl
     );
     
     wire [6:0] opcode;
@@ -49,6 +50,7 @@ module control(
         imm_ctrl = 3'b000;
         jump_ctrl = 1'b0;
         jalr_ctrl = 1'b0;
+        branch_ctrl = 1'b0;
           
         case(opcode)
         
@@ -88,8 +90,8 @@ module control(
                 
                 imm_ctrl = 3'b011;
                 pc_ctrl = 1;
-                
-                
+                branch_ctrl = 1'b1;
+            
                 case(funct3)
                         3'b000: alu_ctrl = 7'b0001010; // BEQ
                         3'b001: alu_ctrl = 7'b0001011; // BNE
