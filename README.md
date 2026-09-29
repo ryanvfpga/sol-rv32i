@@ -9,16 +9,14 @@ A 32-bit, 5-stage pipelined RISC-V processor based on the **RV32I ISA**. The mai
 **(Note: Because read latency is 1 cycle, this project does not implement an L1 Instruction/Data cache).**
 
 #### Branch Prediction & Control Hazards
-It also features a **2-bit dynamic branch predictor** to predict whether a branch will be taken or not, and a **BTB (Branch Table Buffer)** to store past branch targets to increase branch prediction accuracy from the standard Always Not Taken scheme and also reduce pipeline flushes thus boosting CPI. Branch prediction occurs in **IF** stage and resolved in **EX** stage, in case of misprediction both the IF and ID stages have to be flushed causing a 2-cycle penalty.
+It also features a **2-bit dynamic branch predictor** and a **BTB (Branch Table Buffer)** to increase branch prediction accuracy compared to static branch prediction, 
+and to also increase CPI by reducing pipeline flushes caused by branch mispredictions.
+Branch prediction occurs in **IF** stage, and in case of misprediction both **IF** and **ID** stages have to be flushed invoking a 2-cycle penalty.
 
 
 #### Data Hazards
 
-* RAW (Read-After-Write) Hazards are dynamically resolved, by detecting register dependencies in **EX** stage, and data is forwarded from **EX/MEM** or **MEM/WB** registers, in cases where both are present, **EX/MEM** is forwarded due to it being the more recent instruction.
-
-* Load-Use Hazards are detected in the **ID** stage when an instruction depends on a preceding load. Inserts a 1-cycle pipeline stall before forwarding data from the **MEM/WB** register.
-
-* WB/ID Register Conflicts are resolved at the register file level using by writing on negative edge, and reading on positive edge to prevent conflicts.
+RAW (Read-After-Write) Hazards are dynamically resolved, by detecting register dependencies in **EX** stage, and data is forwarded from **EX/MEM** or **MEM/WB** registers, in cases where both are present, **EX/MEM** is forwarded due to it being the more recent instruction. Load-Use Hazards are detected in the **ID** stage when an instruction depends on a preceding load. Inserts a 1-cycle pipeline stall before forwarding data from the **MEM/WB** register. **WB/ID** Register Conflicts are resolved at the register file level using by writing on negative edge, and reading on positive edge to prevent conflicts.
 
 
 
