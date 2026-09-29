@@ -22,6 +22,8 @@ module datapath(
 
     reg [63:0] minstret;
     reg [63:0] mcycle;
+    reg if_valid, id_valid, ex_valid, mem_valid;
+    reg [63:0] branch_count, branch_mispredict;
 
     wire [31:0] pc;
     reg [31:0] pc_next;
@@ -111,7 +113,6 @@ module datapath(
                 end
             end
         end else if (id_predicted) begin
-            // BTB alias: predicted taken, but this is not a control-flow instruction
             misprediction = 1;
             pc_next = id_pc + 32'd4;
         end
@@ -149,6 +150,40 @@ module datapath(
             2'b10: regfile_data_in = mem_pc + 32'd4;
             default: regfile_data_in = 32'd0; 
         endcase
+    end
+
+    always @(posedge clk) begin
+        if (rst) begin
+            if_valid <= 1'b0;
+            id_valid <= 1'b0;
+            ex_valid <= 1'b0;
+            mem_valid <= 1'b0;
+        end else begin
+            if (if_id_flush)
+                if_valid <= 1'b0;
+            else if (!if_id_stall)
+                if_valid <= 1'b1;
+            id_valid <= id_ex_flush ? 1'b0 : if_valid;
+            ex_valid <= id_valid;
+            mem_valid <= ex_valid;
+        end
+    end
+
+    always @(posedge clk) begin
+        if (rst)
+            minstret <= 64'b0;
+        else if (mem_valid)
+            minstret <= minstret + 1'b1;
+    end
+
+    always @(posedge clk) begin
+        if (rst) begin
+            branch_count <= 64'b0;
+            branch_mispredict <= 64'b0;
+        end else if (id_branch_ctrl) begin
+            branch_count <= branch_count + 1'b1;
+            if (misprediction) branch_mispredict <= branch_mispredict + 1'b1;
+        end
     end
 
     always @(posedge clk) begin
@@ -318,5 +353,4 @@ module datapath(
         .predicted(predicted)
     );
 
-endmodule 
-
+endmodule

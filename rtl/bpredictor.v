@@ -23,7 +23,7 @@ module bpredictor(
     reg [1:0] count_out;
 
     assign predicted = (count_out == 2'b10 || count_out == 2'b11);
-
+    
     always @(*) begin
         btb_out = btb[pc[9:2]];
         count_out = count[pc[9:2]];
@@ -40,7 +40,7 @@ module bpredictor(
         if (rst) begin
             for (i = 0; i < 256; i = i + 1) begin 
                 btb[i]   <= 32'b0;
-                count[i] <= 2'b00; 
+                count[i] <= 2'b01; 
             end
         end else begin
             if (branch_ctrl || jal_ctrl || jalr_ctrl) begin
