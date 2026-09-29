@@ -258,7 +258,11 @@ def run_c_tests():
             failed.append(name)
         else:
             print(f"{name}: {GREEN}PASS{RESET}")
-
+            # Extract and print the CYCLES line from stdout
+            for line in stdout.splitlines():
+                if "CYCLES:" in line:
+                    print(f"  -> {line.strip()}")
+            
         print("-" * 60)
 
     return len(c_files), failed

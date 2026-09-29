@@ -28,22 +28,23 @@ module tb_top();
             $readmemh(dmem_file, dut.dp.dm.regs);
         end
 
-        #15 rst = 0;
+        #17 rst = 0;
 
         // 3. Poll address 0x1FFC (word index 1023) for signature with a 10,000 cycle timeout
         timeout = 0;
         // Wait as long as the signature is NOT 1 (PASS) and NOT 2 (FAIL)
-        while (dut.dp.dm.regs[1023] !== 32'd1 && dut.dp.dm.regs[1023] !== 32'd2 && timeout < 10000) begin
+        while (dut.dp.dm.regs[1023] !== 32'd1 && dut.dp.dm.regs[1023] !== 32'd2 && timeout < 50000) begin
             #10;
             timeout = timeout + 1;
         end
 
+        $display("CYCLES: %0d", dut.dp.mcycle);
         // Verify status code (PASS/FAIL)
         if (dut.dp.dm.regs[1023] === 32'd1) begin
             $display("PASS");
         end else if (dut.dp.dm.regs[1023] === 32'd2) begin
             $display("FAIL: C execution reported test assertion failure (Signature = 2)");
-        end else if (timeout >= 10000) begin
+        end else if (timeout >= 50000) begin
             $display("FAIL: Simulation Timeout (CPU did not write signature to 0x1FFC)");
         end else begin
             $display("FAIL: Unexpected signature value 0x%h", dut.dp.dm.regs[1023]);

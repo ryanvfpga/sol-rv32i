@@ -4,7 +4,7 @@ ENTRY( _start )
 MEMORY
 {
 
-  imem (rx)  : ORIGIN = 0x00000000, LENGTH = 4K
+  imem (rx)  : ORIGIN = 0x00000000, LENGTH = 16K
   dmem (rwx) : ORIGIN = 0x00000000, LENGTH = 4K
 }
 
