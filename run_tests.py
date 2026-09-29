@@ -18,6 +18,7 @@ Layout (relative to this script's directory):
 """
 
 import os
+import re
 import sys
 import glob
 import shutil
@@ -51,6 +52,7 @@ DATA_WIDTH_BYTES = 4
 CFLAGS = [
     "-march=rv32i",
     "-mabi=ilp32",
+    "-O1",
     "-mno-relax",
     "-nostdlib",
     "-ffreestanding",
@@ -67,6 +69,18 @@ TOOLCHAIN_CANDIDATES = [
     "riscv32-unknown-elf",
     "riscv64-unknown-elf",
     "riscv-none-elf",
+]
+
+STAT_RE = re.compile(r"^(CYCLES|INSTRET|CPI|IPC|BRANCHES|MISPREDICTS|BP_ACCURACY):\s*(\S+)")
+
+SUMMARY_COLS = [
+    ("CYCLES", "Cycles"),
+    ("INSTRET", "Instrs"),
+    ("CPI", "CPI"),
+    ("IPC", "IPC"),
+    ("BRANCHES", "Branches"),
+    ("MISPREDICTS", "Mispred"),
+    ("BP_ACCURACY", "BP acc"),
 ]
 
 
@@ -197,6 +211,18 @@ def run_c_program(vvp_file, instr_hex, data_hex):
     return subprocess.run(cmd, capture_output=True, text=True)
 
 
+def print_summary(results):
+    if not results:
+        return
+    print()
+    print("Summary")
+    print("=" * 90)
+    print(f"{'program':<20}" + "".join(f"{title:>10}" for _, title in SUMMARY_COLS))
+    for name, stats in results:
+        print(f"{name:<20}" + "".join(f"{stats.get(key, '-'):>10}" for key, _ in SUMMARY_COLS))
+    print("=" * 90)
+
+
 def run_c_tests():
     if not os.path.isfile(TB_TOP):
         print(f"No top-level testbench found at {TB_TOP}")
@@ -221,6 +247,7 @@ def run_c_tests():
     print("=" * 60)
 
     failed = []
+    results = []
 
     for c_file in c_files:
         name = os.path.splitext(os.path.basename(c_file))[0]
@@ -258,12 +285,17 @@ def run_c_tests():
             failed.append(name)
         else:
             print(f"{name}: {GREEN}PASS{RESET}")
-            # Extract and print the CYCLES line from stdout
+            stats = {}
             for line in stdout.splitlines():
-                if "CYCLES:" in line:
+                m = STAT_RE.match(line.strip())
+                if m:
+                    stats[m.group(1)] = m.group(2)
                     print(f"  -> {line.strip()}")
-            
+            results.append((name, stats))
+
         print("-" * 60)
+
+    print_summary(results)
 
     return len(c_files), failed
 

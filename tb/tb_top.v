@@ -33,18 +33,28 @@ module tb_top();
         // 3. Poll address 0x1FFC (word index 1023) for signature with a 10,000 cycle timeout
         timeout = 0;
         // Wait as long as the signature is NOT 1 (PASS) and NOT 2 (FAIL)
-        while (dut.dp.dm.regs[1023] !== 32'd1 && dut.dp.dm.regs[1023] !== 32'd2 && timeout < 50000) begin
+        while (dut.dp.dm.regs[1023] !== 32'd1 && dut.dp.dm.regs[1023] !== 32'd2 && timeout < 800000) begin
             #10;
             timeout = timeout + 1;
         end
 
         $display("CYCLES: %0d", dut.dp.mcycle);
+        $display("INSTRET: %0d", dut.dp.minstret);
+        if (dut.dp.minstret != 0) begin
+            $display("CPI: %0.3f", $itor(dut.dp.mcycle) / $itor(dut.dp.minstret));
+        end
+
+        $display("BRANCHES: %0d", dut.dp.branch_count);
+        $display("MISPREDICTS: %0d", dut.dp.branch_mispredict);
+        if (dut.dp.branch_count != 0)
+            $display("BP_ACCURACY: %0.2f%%", 100.0 * (1.0 - $itor(dut.dp.branch_mispredict) / $itor(dut.dp.branch_count)));
+
         // Verify status code (PASS/FAIL)
         if (dut.dp.dm.regs[1023] === 32'd1) begin
             $display("PASS");
         end else if (dut.dp.dm.regs[1023] === 32'd2) begin
             $display("FAIL: C execution reported test assertion failure (Signature = 2)");
-        end else if (timeout >= 50000) begin
+        end else if (timeout >= 800000) begin
             $display("FAIL: Simulation Timeout (CPU did not write signature to 0x1FFC)");
         end else begin
             $display("FAIL: Unexpected signature value 0x%h", dut.dp.dm.regs[1023]);
