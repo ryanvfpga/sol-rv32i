@@ -3,9 +3,8 @@ ENTRY( _start )
 
 MEMORY
 {
-
-  imem (rx)  : ORIGIN = 0x00000000, LENGTH = 16K
-  dmem (rwx) : ORIGIN = 0x00000000, LENGTH = 4K
+  imem (rx)  : ORIGIN = 0x00000000, LENGTH = 32K
+  dmem (rwx) : ORIGIN = 0x00000000, LENGTH = 32K
 }
 
 SECTIONS
@@ -34,6 +33,11 @@ SECTIONS
     __bss_end = .;
   } > dmem
 
-  /* Top of 4KB DMEM (0x1000 bytes) minus 16-byte alignment offset = 0x0FF0 */
+  /*
+       0x7FF8          failing TESTNUM (riscv-tests)
+       0x7FFC          PASS(1)/FAIL(2) signature polled by tb_top.v          */
+
   __stack_top = ORIGIN(dmem) + LENGTH(dmem) - 16;
+  __signature = ORIGIN(dmem) + LENGTH(dmem) - 4;   /* 0x7FFC */
+
 }

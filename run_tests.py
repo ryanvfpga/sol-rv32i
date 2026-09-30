@@ -2,19 +2,12 @@
 """
 run_tests.py — unified test runner.
 
-  python run_tests.py          # run both RTL unit tests and C program tests
+  python run_tests.py          # run everything (RTL unit, C programs, riscv-tests ISA)
   python run_tests.py -v       # RTL unit tests only (tb/*.v testbenches)
-  python run_tests.py -c       # C program tests only (sw/programs/*.c via tb/tb_top.v)
-  python run_tests.py -v -c    # same as running with no flags
-
-Layout (relative to this script's directory):
-    rtl/*.v                     <- design sources
-    tb/*.v, tb/**/*.v            <- unit testbenches (-v)
-    tb/tb_top.v                  <- top-level testbench used to run C programs (-c)
-    sw/link.ld, sw/start.S
-    sw/programs/*.c              <- C test programs (-c)
-    sw/prebuilt/                 <- C build output (not committed; see .gitignore)
-    build/                        <- shared scratch dir for compiled .vvp files
+  python run_tests.py -c       # C program tests only (tests/programs/*.c via tb/tb_top.v)
+  python run_tests.py -i       # riscv-tests rv32ui ISA tests only (via tb/tb_top.v)
+  python run_tests.py -i -t add,lw   # only the named ISA tests
+  Flags combine: -v -c runs those two suites, etc.
 """
 
 import os
@@ -35,11 +28,27 @@ RTL_DIR = os.path.join(ROOT, "rtl")
 TB_DIR = os.path.join(ROOT, "tb")
 TB_TOP = os.path.join(TB_DIR, "tb_top.v")
 
-SW_DIR = os.path.join(ROOT, "sw")
+SW_DIR = os.path.join(ROOT, "tests")
 LINK_SCRIPT = os.path.join(SW_DIR, "link.ld")
 START_S = os.path.join(SW_DIR, "start.S")
 PROGRAMS_DIR = os.path.join(SW_DIR, "programs")
 PREBUILT_DIR = os.path.join(SW_DIR, "prebuilt")
+
+# riscv-tests: `git submodule add https://github.com/riscv-software-src/riscv-tests tests/riscv-tests`
+RISCV_TESTS = os.path.join(SW_DIR, "riscv-tests")
+ISA_SRC_DIR = os.path.join(RISCV_TESTS, "isa", "rv32ui")
+ISA_MACROS = os.path.join(RISCV_TESTS, "isa", "macros", "scalar")
+ISA_ENV = os.path.join(SW_DIR, "isa_env")
+ISA_PREBUILT_DIR = os.path.join(PREBUILT_DIR, "isa")
+
+# rv32ui tests this core cannot run:
+ISA_SKIP = {"fence_i", "ma_data"}
+
+ISA_CFLAGS = [
+    "-march=rv32i", "-mabi=ilp32", "-mno-relax",
+    "-nostdlib", "-nostartfiles", "-static",
+    "-Wl,--no-warn-rwx-segments", "-Wl,--no-check-sections",
+]
 
 # Word-addressed, 32-bit-wide memory: 1024 deep on each side.
 DATA_WIDTH_BYTES = 4
@@ -59,9 +68,7 @@ CFLAGS = [
     "-fno-builtin",
     "-static",
     "-Wl,--no-warn-rwx-segments",
-    # imem and dmem both start at 0x0 by design (separate physical
-    # memories in the Harvard split) so .text and .data legitimately
-    # share the same address range; skip ld's overlap sanity check.
+    "-msmall-data-limit=0",
     "-Wl,--no-check-sections",
 ]
 
@@ -211,6 +218,14 @@ def run_c_program(vvp_file, instr_hex, data_hex):
     return subprocess.run(cmd, capture_output=True, text=True)
 
 
+def compile_isa_test(prefix, s_file, elf_out):
+    # No start.S (the test brings its own _start via RVTEST_CODE_BEGIN), no libgcc.
+    cmd = [f"{prefix}-gcc", *ISA_CFLAGS, "-I", ISA_ENV, "-I", ISA_MACROS,
+           "-T", LINK_SCRIPT, s_file, "-o", elf_out]
+    res = subprocess.run(cmd, capture_output=True, text=True)
+    return (res.returncode == 0), (res.stderr if res.returncode else None)
+
+
 def print_summary(results):
     if not results:
         return
@@ -300,18 +315,84 @@ def run_c_tests():
     return len(c_files), failed
 
 
+def run_isa_tests(only=None):
+    if not os.path.isfile(TB_TOP):
+        print(f"No top-level testbench found at {TB_TOP}")
+        return 0, []
+    if not os.path.isdir(ISA_SRC_DIR):
+        print(f"{RED}FAIL{RESET}: riscv-tests not found at {RISCV_TESTS} "
+              f"(git submodule add https://github.com/riscv-software-src/riscv-tests {os.path.relpath(RISCV_TESTS, ROOT)})")
+        return 0, ["<riscv-tests missing>"]
+
+    s_files = sorted(glob.glob(os.path.join(ISA_SRC_DIR, "*.S")))
+    s_files = [f for f in s_files if os.path.splitext(os.path.basename(f))[0] not in ISA_SKIP]
+    if only:
+        s_files = [f for f in s_files if os.path.splitext(os.path.basename(f))[0] in only]
+    if not s_files:
+        print("No matching ISA tests.")
+        return 0, []
+
+    prefix = find_toolchain()
+    if prefix is None:
+        return 0, ["<toolchain missing>"]
+    vvp_file = build_c_simulator()
+    if vvp_file is None:
+        return 0, ["<tb_top.v compile error>"]
+
+    os.makedirs(ISA_PREBUILT_DIR, exist_ok=True)
+
+    print("riscv-tests (rv32ui)")
+    print("=" * 60)
+
+    failed = []
+    for s_file in s_files:
+        name = os.path.splitext(os.path.basename(s_file))[0]
+        elf_out = os.path.join(ISA_PREBUILT_DIR, f"{name}.elf")
+        instr_hex = os.path.join(ISA_PREBUILT_DIR, f"{name}_instrmem.hex")
+        data_hex = os.path.join(ISA_PREBUILT_DIR, f"{name}_datamem.hex")
+
+        ok, err = compile_isa_test(prefix, s_file, elf_out)
+        if ok:
+            ok, err = split_hex(prefix, elf_out, instr_hex, data_hex)
+        if not ok:
+            print(f"rv32ui-{name}: {RED}FAIL{RESET} (build error)")
+            if err and err.strip():
+                print(err.strip())
+            failed.append(f"rv32ui-{name}")
+            continue
+
+        res = run_c_program(vvp_file, instr_hex, data_hex)
+        stdout = res.stdout or ""
+        if res.returncode != 0 or "FAIL" in stdout or "PASS" not in stdout:
+            print(f"rv32ui-{name}: {RED}FAIL{RESET}")
+            for line in stdout.splitlines():
+                if line.startswith("FAIL"):
+                    print(f"  {line}")
+            if res.stderr and res.stderr.strip():
+                print(res.stderr.strip())
+            failed.append(f"rv32ui-{name}")
+        else:
+            print(f"rv32ui-{name}: {GREEN}PASS{RESET}")
+
+    print("-" * 60)
+    return len(s_files), failed
+
+
 # --------------------------------------------------------------------------
 
 def main():
     parser = argparse.ArgumentParser(description="Run RTL unit tests and/or C program tests.")
     parser.add_argument("-v", "--verilog", action="store_true", help="run RTL unit tests only")
     parser.add_argument("-c", "--c", action="store_true", help="run C program tests only")
+    parser.add_argument("-i", "--isa", action="store_true", help="run riscv-tests rv32ui ISA tests only")
+    parser.add_argument("-t", "--tests", default="", help="comma-separated ISA test names (with -i), e.g. add,lw")
     args = parser.parse_args()
 
-    # No flags => run both. Either flag alone => just that suite.
-    # Both flags => same as no flags.
-    run_v = args.verilog or not (args.verilog or args.c)
-    run_c_flag = args.c or not (args.verilog or args.c)
+    # No flags => run every suite. Otherwise run exactly the suites selected.
+    any_flag = args.verilog or args.c or args.isa
+    run_v = args.verilog or not any_flag
+    run_c_flag = args.c or not any_flag
+    run_i = args.isa or not any_flag
 
     all_failed = []
     total_run = 0
@@ -322,10 +403,18 @@ def main():
         all_failed += failed
 
     if run_v and run_c_flag:
-        print()  # separate the two suites' output
+        print()  # separate the suites' output
 
     if run_c_flag:
         total, failed = run_c_tests()
+        total_run += total
+        all_failed += failed
+
+    if run_i:
+        if run_v or run_c_flag:
+            print()
+        only = {t.strip() for t in args.tests.split(",") if t.strip()} or None
+        total, failed = run_isa_tests(only)
         total_run += total
         all_failed += failed
 

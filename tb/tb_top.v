@@ -1,9 +1,15 @@
 `timescale 1ns / 1ps
 
 module tb_top();
+    localparam MEM_WORDS = 8192;                 // 32 KB / 4
+    localparam SIG_WORD  = MEM_WORDS - 1;        // 0x7FFC : PASS(1)/FAIL(2)
+    localparam TN_WORD   = MEM_WORDS - 2;        // 0x7FF8 : failing TESTNUM (riscv-tests)
+    localparam MAX_CYCLES = 800000;
+
     reg clk;
     reg rst;
     integer timeout;
+    integer i;
 
     reg [1024*8-1:0] imem_file;
     reg [1024*8-1:0] dmem_file;
@@ -15,6 +21,12 @@ module tb_top();
     initial begin
         clk = 0;
         rst = 1;
+
+        // NOP all IMEM locations
+        for (i = 0; i < MEM_WORDS; i = i + 1) begin
+            dut.dp.instrmem_inst.mem_loc[i] = 32'h00000013;
+            dut.dp.dm.regs[i]               = 32'h0;
+        end
 
         //Load .hex files for instruction/data memory dynamically.
         if ($value$plusargs("IMEM_HEX=%s", imem_file)) begin
@@ -30,10 +42,9 @@ module tb_top();
 
         #17 rst = 0;
 
-        // 3. Poll address 0x1FFC (word index 1023) for signature with a 10,000 cycle timeout
+        // Poll the signature word (top of DMEM, 0x7FFC) until PASS(1) / FAIL(2) or timeout.
         timeout = 0;
-        // Wait as long as the signature is NOT 1 (PASS) and NOT 2 (FAIL)
-        while (dut.dp.dm.regs[1023] !== 32'd1 && dut.dp.dm.regs[1023] !== 32'd2 && timeout < 800000) begin
+        while (dut.dp.dm.regs[SIG_WORD] !== 32'd1 && dut.dp.dm.regs[SIG_WORD] !== 32'd2 && timeout < MAX_CYCLES) begin
             #10;
             timeout = timeout + 1;
         end
@@ -42,6 +53,7 @@ module tb_top();
         $display("INSTRET: %0d", dut.dp.minstret);
         if (dut.dp.minstret != 0) begin
             $display("CPI: %0.3f", $itor(dut.dp.mcycle) / $itor(dut.dp.minstret));
+            $display("IPC: %0.3f", $itor(dut.dp.minstret) / $itor(dut.dp.mcycle));
         end
 
         $display("BRANCHES: %0d", dut.dp.branch_count);
@@ -50,14 +62,15 @@ module tb_top();
             $display("BP_ACCURACY: %0.2f%%", 100.0 * (1.0 - $itor(dut.dp.branch_mispredict) / $itor(dut.dp.branch_count)));
 
         // Verify status code (PASS/FAIL)
-        if (dut.dp.dm.regs[1023] === 32'd1) begin
+        if (dut.dp.dm.regs[SIG_WORD] === 32'd1) begin
             $display("PASS");
-        end else if (dut.dp.dm.regs[1023] === 32'd2) begin
-            $display("FAIL: C execution reported test assertion failure (Signature = 2)");
-        end else if (timeout >= 800000) begin
-            $display("FAIL: Simulation Timeout (CPU did not write signature to 0x1FFC)");
+        end else if (dut.dp.dm.regs[SIG_WORD] === 32'd2) begin
+            // riscv-tests store gp (TESTNUM) at 0x7FF8 before signalling FAIL; C programs leave it 0.
+            $display("FAIL: test reported failure (Signature = 2, TESTNUM = %0d)", dut.dp.dm.regs[TN_WORD]);
+        end else if (timeout >= MAX_CYCLES) begin
+            $display("FAIL: Simulation Timeout (CPU did not write signature to 0x7FFC)");
         end else begin
-            $display("FAIL: Unexpected signature value 0x%h", dut.dp.dm.regs[1023]);
+            $display("FAIL: Unexpected signature value 0x%h", dut.dp.dm.regs[SIG_WORD]);
         end
 
         $finish;
