@@ -11,7 +11,7 @@ module datamem(
     );
     
     reg [31:0] temp_data;
-    reg [31:0] regs [0:1023];
+    reg [31:0] regs [0:8191];
     
     reg [7:0] mem_byte; 
     reg [15:0] halfword;

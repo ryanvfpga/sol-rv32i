@@ -9,7 +9,7 @@ module instrmem(
     input clk,
     input rst
 );
-    reg [31:0] mem_loc [0:4095];
+    reg [31:0] mem_loc [0:8191];
 
     always @(posedge clk) begin
         if (rst || instrmem_flush) begin
