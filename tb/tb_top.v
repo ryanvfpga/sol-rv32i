@@ -65,7 +65,6 @@ module tb_top();
         if (dut.dp.dm.regs[SIG_WORD] === 32'd1) begin
             $display("PASS");
         end else if (dut.dp.dm.regs[SIG_WORD] === 32'd2) begin
-            // riscv-tests store gp (TESTNUM) at 0x7FF8 before signalling FAIL; C programs leave it 0.
             $display("FAIL: test reported failure (Signature = 2, TESTNUM = %0d)", dut.dp.dm.regs[TN_WORD]);
         end else if (timeout >= MAX_CYCLES) begin
             $display("FAIL: Simulation Timeout (CPU did not write signature to 0x7FFC)");

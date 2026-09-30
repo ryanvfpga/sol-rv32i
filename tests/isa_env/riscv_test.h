@@ -1,21 +1,16 @@
-
-// Replaces riscv-tests/env/p/riscv_test.h. No CSRs, no ECALL/EBREAK/FENCE,
-// no trap vector, no tohost/fromhost. Result is reported by writing to the
-// top word of DMEM, which tb_top.v polls:
-//
 //     0x7FFC  <- 1 (PASS) or 2 (FAIL)
 //     0x7FF8  <- failing TESTNUM (gp), written just before the FAIL code
 
 #ifndef _ENV_BAREMETAL_H
 #define _ENV_BAREMETAL_H
 
-#define SIG_BASE     0x8000        /* first byte past DMEM; must be lui-loadable */
+#define SIG_BASE     0x8000        
 #define SIG_STATUS   -4            /* 0x7FFC */
 #define SIG_TESTNUM  -8            /* 0x7FF8 */
 
-#define TESTNUM gp                 /* same convention as upstream */
+#define TESTNUM gp                 
 
-// Upstream rv32ui/*.S do: #undef RVTEST_RV64U / #define RVTEST_RV64U RVTEST_RV32U
+
 #define RVTEST_RV32U  .macro init; .endm
 #define RVTEST_RV64U  RVTEST_RV32U
 #define RVTEST_CODE_BEGIN                                               \
