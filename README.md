@@ -1,39 +1,43 @@
 # sol-rv32i
 
-A 32-bit, 5-stage pipelined RISC-V processor based on the **RV32I ISA**. The main goal of this project is to understand and explore the principles of CPU microarchitecture.
+A 32-bit, 5-stage pipelined RISC-V processor based on the **RV32I ISA** and validated on official riscv-tests, designed and implemented to understand the core principles of CPU microarchitecture.
 
-## Microarchitecture
+### Features
 
-**sol-rv32i** features a standard 5-stage pipeline **(IF, ID, EX, MEM, WB)** and utilizes a Harvard memory architecture with 16KB Instruction and Data memory based in BRAM allowing for 1 cycle read/write latency.
+* 5 stage pipeline with IF, ID, EX, MEM, WB.
+* Implemented 37 out of the 40 base RV32I instructions, excluding FENCE, ECALL and EBREAK.
+* Harvard architecture with 32KB of Instruction and Data memory implemented with on-chip BRAM with single-cycle read/write latency.
+*   Dynamic data hazard handling through forwarding from EX/MEM or MEM/WB stage, with 1-cycle stall on load-use hazards.
+* Register write/read staggered on positive/negative clock edges to prevent structural hazards between ID and WB.
+* 2 bit bimodal branch predictor with 256 entry tagged BTB (Branch Target Buffer) to reduce pipeline flushes caused by control hazards and increase IPC.
+* Validated on `riscv-tests/rv32ui`: Passed 38/40 tests (**excluding fence_i and ma_data**), using a custom memory mapped PASS/FAIL environment (see [Testing](#testing)).
 
-**(Note: Because read latency is 1 cycle, this project does not implement an L1 Instruction/Data cache).**
+**(Note: Because memory is constrained to BRAM, this project does not implement an L1 Instruction/Data cache).**
 
-#### Branch Prediction & Control Hazards
-It also features a **2-bit dynamic branch predictor** and a **BTB (Branch Table Buffer)** to increase branch prediction accuracy compared to static branch prediction, 
-and to also increase CPI by reducing pipeline flushes caused by branch mispredictions.
-Branch prediction occurs in **IF** stage, and in case of misprediction both **IF** and **ID** stages have to be flushed invoking a 2-cycle penalty.
+## Architecture
 
-
-#### Data Hazards
-
-RAW (Read-After-Write) Hazards are dynamically resolved, by detecting register dependencies in **EX** stage, and data is forwarded from **EX/MEM** or **MEM/WB** registers, in cases where both are present, **EX/MEM** is forwarded due to it being the more recent instruction. Load-Use Hazards are detected in the **ID** stage when an instruction depends on a preceding load. Inserts a 1-cycle pipeline stall before forwarding data from the **MEM/WB** register. **WB/ID** Register Conflicts are resolved at the register file level using by writing on negative edge, and reading on positive edge to prevent conflicts.
-
-
+[To Be Added]
 
 
-## Instruction Set Architecture
 
-Implemented 37 of the 40 base RV32I instructions, System exceptions (`ECALL`, `EBREAK`) and memory synchronization (`FENCE`) are omitted due to not being part of the microarchitectural scope.
+## Performance
+
+ 4 different programs were compiled using  the `-O1` flag, and compared Cycles, CPI and Branch predictor accuracy between a 2-bit bimodal predictor with BTB and a static predictor (Always not-taken)
+
+Bubble sort and merge sort only show modest improvement due to data dependent branches.
+
+| Configuration | Cycles | CPI | Accuracy |
+|---|---|---|---|
+| bubblesort, always not-taken | 78153 | 1.478 | 71.06% |
+| bubblesort, 2-bit + BTB | 66063 | 1.250 | 85.08% |
+| insertionsort, always not-taken | 39343 | 1.481 | 50.03% |
+| insertionsort, 2-bit + BTB | 31109 | 1.171 | 98.39% |
+| matmul, always not-taken | 518171 | 1.357 | 48.92% |
+| matmul, 2-bit + BTB | 400981 | 1.050 | 91.95% |
+| mergesort, always not-taken | 45691 | 1.263 | 71.18% |
+| mergesort, 2-bit + BTB | 41387 | 1.144 | 81.26% |
 
 
-| Format | Instruction Type | Implemented Instructions |
-| :--- | :--- | :--- |
-| **R-Type** | Register-Register Operations | `ADD`, `SUB`, `SLL`, `SLT`, `SLTU`, `XOR`, `SRL`, `SRA`, `OR`, `AND` |
-| **I-Type** | Immediate Operations & Loads | `ADDI`, `SLTI`, `SLTIU`, `XORI`, `ORI`, `ANDI`, `SLLI`, `SRLI`, `SRAI`, `JALR`, `LB`, `LH`, `LW`, `LBU`, `LHU` |
-| **S-Type** | Store Operations | `SB`, `SH`, `SW` |
-| **B-Type** | Conditional Branches | `BEQ`, `BNE`, `BLT`, `BGE`, `BLTU`, `BGEU` |
-| **U-Type** | Upper Immediate Operations | `LUI`, `AUIPC` |
-| **J-Type** | Unconditional Jumps | `JAL` |
 
 
 ## Testing
@@ -42,26 +46,45 @@ To run the test suites, clone the repository first:
 
 ```bash
 git clone https://github.com/ryanvfpga/sol-rv32i.git
-cd sol-rv32i
+cd sol-rv32i/
 ```
 
 ### Prerequisites
 
-* **Icarus Verilog (`iverilog`)**: Required for all Verilog simulations, as well as running the C test programs.
+* **Icarus Verilog (iverilog)**: Required for running any type(s) of tests.
 
-* **RISC-V Toolchain (`riscv32-unknown-elf-gcc`)**: Required only if compiling and running C test programs in `sw/programs/`.
+* **RISC-V Toolchain (riscv32-unknown-elf-gcc)**: Required only if compiling and running C test programs in `tests/programs/` or running `tests/riscv-tests`.
 
-### Flags
+By default, running without flags simulates **everything** (Verilog testbenches, C, and riscv-tests).
+
 
 ```bash
-# To simulate verilog testbenches, as well as C Programs
-python run_tests.py
-
-# To only simulate verilog testbenches
-python run_tests.py -v
-
-# To only compile and simulate C Programs (NOTE: This still requires iverilog under the hood to simulate after compilation)
-python run_tests.py -c
-
+python run_tests.py [flag]
 ```
-To add your own verilog testbenches or C Programs you can add them under `tb/` or `sw/programs/` respectively, ensure that both of them follow the general format of pre-existing testbenches/programs because `run_tests.py` relies on a generalized **PASS/FAIL** output from the simulator.
+
+**Optional Flags:**
+* `-v` : Run verilog testbenches only.
+* `-c` : Run C programs only 
+* `-i` : Run riscv-tests only 
+
+
+
+`riscv-tests/rv32ui` uses ECALL/tohost to report test results, since this core does not implement them, we use a custom header to write PASS/FAIL response to **0x7FFC**, and failing test number to **0x7FF8**, which the testbench then polls. The Stack pointer is initialised just below this region.
+
+To add your own verilog testbenches or C Programs you can add them under `tb/` or `tests/programs/` respectively, ensure that both of them follow the general format of pre-existing testbenches/programs because `run_tests.py` relies on a generalized **PASS/FAIL** output from the simulator (for testbenches) or a **PASS/FAIL** code written into **0x7FFC** for C-Programs.
+
+## Future Work
+
+* Add support for M-extension, to support the full RV32IM ISA.
+
+* Add CSR support to enable trap handling and interrupts.
+
+* Port and benchmark CPU against CoreMark and report findings.
+
+* Add L1 I/D cache to support external DDR memory on Zynq7020 FPGA.
+
+
+
+
+
+
