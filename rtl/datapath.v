@@ -11,7 +11,9 @@ module datapath(
     input pc_ctrl,
     input jump_ctrl,
     input jalr_ctrl,
-    input branch_ctrl
+    input branch_ctrl,
+    input  [2:0] dbg_sel,
+    output reg [31:0] dbg_out
 ); 
 
     wire predicted;
@@ -278,6 +280,20 @@ module datapath(
             mem_pc <= ex_pc;
         end
     end
+
+    always @(posedge clk) begin
+        case (dbg_sel)
+            3'd0:    dbg_out <= pc;
+            3'd1:    dbg_out <= regfile_data_in;
+            3'd2:    dbg_out <= ex_alu_result;
+            3'd3:    dbg_out <= mcycle[31:0]   ^ mcycle[63:32];
+            3'd4:    dbg_out <= minstret[31:0] ^ minstret[63:32];
+            3'd5:    dbg_out <= branch_count[31:0] ^ branch_count[63:32];
+            3'd6:    dbg_out <= branch_mispredict[31:0] ^ branch_mispredict[63:32];
+            default: dbg_out <= mem_pc ^ ex_rs2 ^ {27'd0, mem_rd} ^ {29'd0, mem_reg_ctrl};
+        endcase
+    end
+
 
     instrmem instrmem_inst (
         .address(pc), 

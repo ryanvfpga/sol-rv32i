@@ -9,7 +9,14 @@ module instrmem(
     input clk,
     input rst
 );
-    reg [31:0] mem_loc [0:8191];
+    (* ram_style = "block" *) reg [31:0] mem_loc [0:8191];
+
+    integer i;
+    initial begin
+        for (i = 0; i < 8192; i = i + 1)
+            mem_loc[i] = 32'h00000013;   
+        $readmemh("test_instr.mem", mem_loc);      
+    end
 
     always @(posedge clk) begin
         if (rst || instrmem_flush) begin
@@ -19,7 +26,7 @@ module instrmem(
         end
     end
 
-    
+
 
 endmodule
 
