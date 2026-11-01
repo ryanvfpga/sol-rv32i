@@ -25,4 +25,4 @@ build/
 *.vcd
 nul
 
-sw/prebuilt
+tests/prebuilt
