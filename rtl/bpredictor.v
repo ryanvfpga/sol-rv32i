@@ -1,3 +1,5 @@
+`timescale 1ns / 1ps
+
 module bpredictor(
     input clk,
     input rst,
@@ -36,13 +38,15 @@ module bpredictor(
     end
     
     integer i;
+    initial begin
+        for (i = 0; i < 256; i = i + 1) begin 
+            btb[i]   = 32'b0;
+            count[i] = 2'b01; 
+        end
+    end
+
     always @(posedge clk) begin
-        if (rst) begin
-            for (i = 0; i < 256; i = i + 1) begin 
-                btb[i]   <= 32'b0;
-                count[i] <= 2'b01; 
-            end
-        end else begin
+        if (!rst) begin
             if (branch_ctrl || jal_ctrl || jalr_ctrl) begin
                 btb[index] <= jump_target;
 
