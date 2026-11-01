@@ -88,7 +88,7 @@ module datapath(
     reg [31:0] fwd_rs1;
     reg [31:0] fwd_rs2;
     
-    reg misprediction;
+    (* max_fanout = 16 *) reg misprediction;
 
     assign load_use_hazard = (id_reg_ctrl[2:1] == 2'b01) && (id_rd != 5'd0) && ((if_instr[19:15] == id_rd) || (if_instr[24:20] == id_rd));
     assign if_id_stall = load_use_hazard && !misprediction;
@@ -98,35 +98,41 @@ module datapath(
 
     assign instruction = if_instr;
 
-  
     wire branch_eq  = (fwd_rs1 == fwd_rs2);
     wire branch_lt  = ($signed(fwd_rs1) < $signed(fwd_rs2));
     wire branch_ltu = (fwd_rs1 < fwd_rs2);
     reg  t_branch_fast;
     always @(*) begin
         case (id_funct3)
-            3'b000: t_branch_fast = branch_eq;
-            3'b001: t_branch_fast = !branch_eq;
-            3'b100: t_branch_fast = branch_lt;
-            3'b101: t_branch_fast = !branch_lt;
-            3'b110: t_branch_fast = branch_ltu;
-            3'b111: t_branch_fast = !branch_ltu;
+            3'b000:  t_branch_fast = branch_eq;
+            3'b001:  t_branch_fast = !branch_eq;
+            3'b100:  t_branch_fast = branch_lt;
+            3'b101:  t_branch_fast = !branch_lt;
+            3'b110:  t_branch_fast = branch_ltu;
+            3'b111:  t_branch_fast = !branch_ltu;
             default: t_branch_fast = 1'b0;
         endcase
     end
 
+
+    wire [31:0] branch_static_target  = id_pc + id_immediate;
     wire [31:0] dedicated_jalr_target = (fwd_rs1 + id_immediate) & 32'hFFFFFFFE;
-    assign branch_target_pc = id_jalr_ctrl ? dedicated_jalr_target : (id_pc + id_immediate);
-    assign branch_taken = (id_pc_ctrl & (t_branch_fast | id_jump_ctrl | id_jalr_ctrl));
+    assign branch_target_pc = id_jalr_ctrl ? dedicated_jalr_target : branch_static_target;
+    assign branch_taken     = (id_pc_ctrl & (t_branch_fast | id_jump_ctrl | id_jalr_ctrl));
 
 
+    wire static_target_mismatch = (id_predicted_pc != branch_static_target);
+    wire jalr_target_mismatch   = (id_predicted_pc != dedicated_jalr_target);
+    wire target_mismatch        = id_jalr_ctrl ? jalr_target_mismatch : static_target_mismatch;
+
+   
     always @(*) begin
         misprediction = 0;
         pc_next = predicted ? predicted_pc : (pc + 32'd4);
         
         if (id_branch_ctrl || id_jump_ctrl || id_jalr_ctrl) begin
             if (branch_taken) begin
-                if (!id_predicted || (id_predicted_pc != branch_target_pc)) begin
+                if (!id_predicted || target_mismatch) begin
                     misprediction = 1;
                     pc_next = branch_target_pc;
                 end
@@ -166,6 +172,7 @@ module datapath(
             default: alu_in_1 = fwd_rs1;
         endcase
     end
+
 
     always @(*) begin
         case(mem_reg_ctrl[2:1])
@@ -229,42 +236,49 @@ module datapath(
             mcycle <= mcycle + 1'b1;
     end
 
+  
     always @(posedge clk) begin
         if (rst || id_ex_flush) begin
-            id_rs1 <= 32'd0;
-            id_rs2 <= 32'd0;
-            id_immediate <= 32'd0;
-            id_rd <= 5'd0;            
-            id_alu_ctrl <= 7'b0;
-            id_reg_ctrl <= 3'b0;      
-            id_mem_write <= 1'b0;   
-            id_pc <= 32'd0;
-            id_pc_ctrl <= 1'b0;
-            id_jump_ctrl <= 1'b0;
-            id_jalr_ctrl <= 1'b0;
+            id_alu_ctrl    <= 7'b0;
+            id_reg_ctrl    <= 3'b0;      
+            id_mem_write   <= 1'b0;   
+            id_pc_ctrl     <= 1'b0;
+            id_jump_ctrl   <= 1'b0;
+            id_jalr_ctrl   <= 1'b0;
             id_branch_ctrl <= 1'b0;
-            id_funct3 <= 3'b0;
-            id_rs1_addr <= 5'b0;
-            id_rs2_addr <= 5'b0;
-            id_predicted <= 1'b0;
-            id_predicted_pc <= 32'd0;
+            id_predicted   <= 1'b0;
         end else begin
-            id_rs1 <= rs1;
-            id_rs2 <= rs2;
-            id_immediate <= immediate;
-            id_rd <= if_instr[11:7]; 
-            id_alu_ctrl <= alu_ctrl;
-            id_reg_ctrl <= reg_ctrl;
-            id_mem_write <= mem_write;
-            id_pc <= if_pc;
-            id_pc_ctrl <= pc_ctrl;
-            id_jump_ctrl <= jump_ctrl;
-            id_jalr_ctrl <= jalr_ctrl;
+            id_alu_ctrl    <= alu_ctrl;
+            id_reg_ctrl    <= reg_ctrl;
+            id_mem_write   <= mem_write;
+            id_pc_ctrl     <= pc_ctrl;
+            id_jump_ctrl   <= jump_ctrl;
+            id_jalr_ctrl   <= jalr_ctrl;
             id_branch_ctrl <= branch_ctrl;
-            id_funct3 <= if_instr[14:12];
-            id_rs1_addr <= if_instr[19:15];
-            id_rs2_addr <= if_instr[24:20];
-            id_predicted <= if_predicted;
+            id_predicted   <= if_predicted;
+        end
+    end
+
+    always @(posedge clk) begin
+        if (rst) begin
+            id_rs1          <= 32'd0;
+            id_rs2          <= 32'd0;
+            id_immediate    <= 32'd0;
+            id_rd           <= 5'd0;            
+            id_pc           <= 32'd0;
+            id_funct3       <= 3'b0;
+            id_rs1_addr     <= 5'b0;
+            id_rs2_addr     <= 5'b0;
+            id_predicted_pc <= 32'd0;
+        end else if (!id_ex_flush) begin
+            id_rs1          <= rs1;
+            id_rs2          <= rs2;
+            id_immediate    <= immediate;
+            id_rd           <= if_instr[11:7]; 
+            id_pc           <= if_pc;
+            id_funct3       <= if_instr[14:12];
+            id_rs1_addr     <= if_instr[19:15];
+            id_rs2_addr     <= if_instr[24:20];
             id_predicted_pc <= if_predicted_pc;
         end
     end
@@ -319,7 +333,6 @@ module datapath(
             default: dbg_out <= mem_pc ^ ex_rs2 ^ {27'd0, mem_rd} ^ {29'd0, mem_reg_ctrl};
         endcase
     end
-
 
     instrmem instrmem_inst (
         .address(pc), 
