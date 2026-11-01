@@ -60,6 +60,7 @@ module datapath(
     wire id_ex_flush;
 
     reg [31:0] ex_pc;
+    reg [31:0] ex_pc_plus_4;
     reg [31:0] ex_rs2;
     reg [31:0] ex_alu_result;
     reg [4:0] ex_rd;
@@ -68,6 +69,7 @@ module datapath(
     reg ex_mem_write;
 
     reg [31:0] mem_pc;
+    reg [31:0] mem_pc_plus_4;
     reg [31:0] mem_alu_result;
     reg [4:0] mem_rd;
     reg [2:0] mem_reg_ctrl;
@@ -95,8 +97,28 @@ module datapath(
     assign id_ex_flush = load_use_hazard || misprediction;
 
     assign instruction = if_instr;
-    assign branch_target_pc = id_jalr_ctrl ? (alu_result & 32'hFFFFFFFE) : id_pc + id_immediate;
-    assign branch_taken = (id_pc_ctrl & (t_branch | id_jump_ctrl | id_jalr_ctrl));
+
+  
+    wire branch_eq  = (fwd_rs1 == fwd_rs2);
+    wire branch_lt  = ($signed(fwd_rs1) < $signed(fwd_rs2));
+    wire branch_ltu = (fwd_rs1 < fwd_rs2);
+    reg  t_branch_fast;
+    always @(*) begin
+        case (id_funct3)
+            3'b000: t_branch_fast = branch_eq;
+            3'b001: t_branch_fast = !branch_eq;
+            3'b100: t_branch_fast = branch_lt;
+            3'b101: t_branch_fast = !branch_lt;
+            3'b110: t_branch_fast = branch_ltu;
+            3'b111: t_branch_fast = !branch_ltu;
+            default: t_branch_fast = 1'b0;
+        endcase
+    end
+
+    wire [31:0] dedicated_jalr_target = (fwd_rs1 + id_immediate) & 32'hFFFFFFFE;
+    assign branch_target_pc = id_jalr_ctrl ? dedicated_jalr_target : (id_pc + id_immediate);
+    assign branch_taken = (id_pc_ctrl & (t_branch_fast | id_jump_ctrl | id_jalr_ctrl));
+
 
     always @(*) begin
         misprediction = 0;
@@ -149,7 +171,7 @@ module datapath(
         case(mem_reg_ctrl[2:1])
             2'b00: regfile_data_in = mem_alu_result;
             2'b01: regfile_data_in = mem_datamem_read;
-            2'b10: regfile_data_in = mem_pc + 32'd4;
+            2'b10: regfile_data_in = mem_pc_plus_4;
             default: regfile_data_in = 32'd0; 
         endcase
     end
@@ -255,6 +277,7 @@ module datapath(
             ex_mem_write <= 1'b0;
             ex_rs2 <= 32'd0;
             ex_pc <= 32'd0;
+            ex_pc_plus_4 <= 32'd0;
             ex_funct3 <= 3'b0;
         end else begin
             ex_alu_result <= alu_result;
@@ -263,6 +286,7 @@ module datapath(
             ex_mem_write <= id_mem_write;
             ex_rs2 <= fwd_rs2;
             ex_pc <= id_pc;
+            ex_pc_plus_4 <= id_pc + 32'd4;
             ex_funct3 <= id_funct3;
         end
     end
@@ -273,11 +297,13 @@ module datapath(
             mem_rd <= 5'd0;
             mem_reg_ctrl <= 3'b0;
             mem_pc <= 32'd0;
+            mem_pc_plus_4 <= 32'd0;
         end else begin
             mem_alu_result <= ex_alu_result;
             mem_rd <= ex_rd;
             mem_reg_ctrl <= ex_reg_ctrl;
             mem_pc <= ex_pc;
+            mem_pc_plus_4 <= ex_pc_plus_4;
         end
     end
 
@@ -359,7 +385,7 @@ module datapath(
     );
 
     bpredictor bp(
-        .ctrl({t_branch, id_branch_ctrl, id_jump_ctrl, id_jalr_ctrl}), 
+        .ctrl({t_branch_fast, id_branch_ctrl, id_jump_ctrl, id_jalr_ctrl}), 
         .clk(clk), 
         .rst(rst), 
         .id_pc(id_pc), 

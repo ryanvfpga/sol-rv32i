@@ -11,7 +11,7 @@ module datamem(
     );
     
     reg [31:0] temp_data;
-    reg [31:0] regs [0:8191];
+    (* ram_style = "block" *) reg [31:0] regs [0:8191];
     reg [7:0] mem_byte; 
     reg [15:0] halfword;
     reg [31:0] read_data;
@@ -20,16 +20,11 @@ module datamem(
     
     assign data = temp_data;
 
-    always @(posedge clk)
-        if(rst) begin
-            read_data <= 32'b0;
-            reg_address <= 32'b0;
-            reg_funct3 <= 3'b0;
-        end else begin
-            read_data <= regs[address[31:2]];
-            reg_address <= address;
-            reg_funct3 <= funct3;
-        end
+    always @(posedge clk) begin
+        read_data <= regs[address[31:2]];
+        reg_address <= address;
+        reg_funct3 <= funct3;
+    end
 
     always @(*) begin
         case(reg_address[1:0]) 

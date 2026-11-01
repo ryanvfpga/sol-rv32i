@@ -16,8 +16,8 @@ module bpredictor(
 
     wire [7:0] index = id_pc[9:2];
 
-    reg [31:0] btb [0:255];
-    reg [1:0] count [0:255];
+    (* ram_style = "distributed" *) reg [31:0] btb [0:255];
+    (* ram_style = "distributed" *) reg [1:0] count [0:255];
 
     reg [31:0] btb_out;
     reg [1:0] count_out;
