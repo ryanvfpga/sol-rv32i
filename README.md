@@ -11,6 +11,7 @@ A 32-bit, 5-stage pipelined RISC-V processor based on the **RV32I ISA** and vali
 * Register write/read staggered on positive/negative clock edges to prevent structural hazards between ID and WB.
 * 2 bit bimodal branch predictor with 256 entry tagged BTB (Branch Target Buffer) to reduce pipeline flushes caused by control hazards and increase IPC.
 * Validated on `riscv-tests/rv32ui`: Passed 38/40 tests (**excluding fence_i and ma_data**), using a custom memory mapped PASS/FAIL environment (see [Testing](#testing)).
+* Achieved timing closure at **80 MHz**
 
 **(Note: Because memory is constrained to BRAM, this project does not implement an L1 Instruction/Data cache).**
 
@@ -37,6 +38,26 @@ Bubble sort and merge sort only show modest improvement due to data dependent br
 | mergesort, always not-taken | 45691 | 1.263 | 71.18% |
 | mergesort, 2-bit + BTB | 41387 | 1.144 | 81.26% |
 
+## FPGA Implementation & Synthesis
+
+Synthesized and implemented for a **Xilinx Zynq-7020 FPGA** using Xilinx Vivado. Timing closure achieved at **80 MHz**.
+
+### Timing Summary
+
+| Metric | Value |
+|---|---|
+| Target Clock period | 12.5 ns |
+| Target Frequency | 80 MHz |
+| WNS (setup) | +0.202 ns |
+| Fmax | ~81.3 MHz |
+
+### Resource Utilization (Zynq-7020)
+
+| Resource | Utilization | Available | Utilization % |
+|---|---|---|---|
+| **LUT** | 1,756 | 53,200 | 3.30% |
+| **FF** | 870 | 106,400 | 0.82% |
+| **BRAM Tile** | 16 | 140 | 11.43% |
 
 
 
